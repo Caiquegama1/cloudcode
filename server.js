@@ -435,11 +435,22 @@ function hasApiKey() {
 }
 
 function mapModelToAPI(model) {
-  if (!model) return 'claude-sonnet-4-6';
+  if (!model) return 'claude-sonnet-4-5';
   const lowered = String(model).toLowerCase();
-  if (lowered.includes('opus')) return 'claude-opus-4-6';
+  if (lowered.includes('opus'))  return 'claude-opus-4-5';
   if (lowered.includes('haiku')) return 'claude-haiku-4-5-20251001';
-  return 'claude-sonnet-4-6';
+  return 'claude-sonnet-4-5';   // padrão seguro — disponível na API
+}
+
+// Helper: termina SSE com erro visível no frontend
+function sseError(res, msg) {
+  try {
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  } catch {}
 }
 
 // Streaming via Anthropic API (SSE nativo)
@@ -448,8 +459,8 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
   const apiKey = getActiveApiKey(account);
 
   if (!apiKey) {
-    res.write(`data: ${JSON.stringify({ error: 'API Key não configurada.' })}\n\n`);
-    res.end();
+    console.error('[CLAUDE] Nenhuma API key configurada. Verifique CLAUDE_API_KEY_1 no Railway.');
+    sseError(res, 'API Key não configurada. Adicione CLAUDE_API_KEY_1 nas variáveis de ambiente.');
     return Promise.resolve();
   }
 
@@ -462,6 +473,8 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
     stream: true,
     messages: [{ role: 'user', content: prompt }],
   });
+
+  console.log(`[CLAUDE] → model=${modelId} account=${account || activeClaudeAccount} keyPrefix=${apiKey.slice(0,12)}...`);
 
   // Envia evento de sessão imediato
   res.write(`data: ${JSON.stringify({
@@ -483,7 +496,29 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
         'content-length': Buffer.byteLength(body),
       },
     }, (apiRes) => {
+      const status = apiRes.statusCode;
+      console.log(`[CLAUDE] ← HTTP ${status}`);
+
+      // ── Erro HTTP (4xx / 5xx): ler body inteiro e propagar ──
+      if (status !== 200) {
+        let errBody = '';
+        apiRes.on('data', c => (errBody += c));
+        apiRes.on('end', () => {
+          let msg = `Anthropic API retornou HTTP ${status}`;
+          try {
+            const parsed = JSON.parse(errBody);
+            msg = parsed?.error?.message || parsed?.message || msg;
+          } catch {}
+          console.error(`[CLAUDE] Erro API: ${msg} | body: ${errBody.slice(0, 300)}`);
+          sseError(res, msg);
+          resolve();
+        });
+        return;
+      }
+
+      // ── Resposta 200: processar SSE ──
       let buffer = '';
+      let gotText = false;
 
       apiRes.on('data', (chunk) => {
         buffer += chunk.toString();
@@ -499,6 +534,7 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
           try { event = JSON.parse(data); } catch { continue; }
 
           if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+            gotText = true;
             if (!res.writableEnded) {
               res.write(`data: ${JSON.stringify({
                 type: 'text',
@@ -509,6 +545,7 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
           }
 
           if (event.type === 'message_stop') {
+            console.log(`[CLAUDE] ✓ message_stop gotText=${gotText}`);
             if (!res.writableEnded) {
               res.write(`data: ${JSON.stringify({ type: 'done', sessionId: syntheticSessionId })}\n\n`);
               res.write('data: [DONE]\n\n');
@@ -518,16 +555,16 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
           }
 
           if (event.type === 'error') {
-            if (!res.writableEnded) {
-              res.write(`data: ${JSON.stringify({ error: event.error?.message || 'Erro da API Anthropic' })}\n\n`);
-              res.end();
-            }
+            const errMsg = event.error?.message || 'Erro da API Anthropic';
+            console.error(`[CLAUDE] Erro SSE: ${errMsg}`);
+            sseError(res, errMsg);
             resolve();
           }
         }
       });
 
       apiRes.on('end', () => {
+        console.log(`[CLAUDE] apiRes end — writableEnded=${res.writableEnded} gotText=${gotText}`);
         if (!res.writableEnded) {
           res.write(`data: ${JSON.stringify({ type: 'done', sessionId: syntheticSessionId })}\n\n`);
           res.write('data: [DONE]\n\n');
@@ -537,19 +574,15 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
       });
 
       apiRes.on('error', (err) => {
-        if (!res.writableEnded) {
-          res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-          res.end();
-        }
+        console.error(`[CLAUDE] apiRes error: ${err.message}`);
+        sseError(res, err.message);
         resolve();
       });
     });
 
     req.on('error', (err) => {
-      if (!res.writableEnded) {
-        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-        res.end();
-      }
+      console.error(`[CLAUDE] req error: ${err.message}`);
+      sseError(res, `Erro de conexão com Anthropic: ${err.message}`);
       resolve();
     });
 
@@ -557,9 +590,7 @@ function callClaudeAPIStream({ prompt, model, account, res, sessionId }) {
     req.end();
 
     // Abortar se cliente fechar conexão
-    res.on('close', () => {
-      try { req.destroy(); } catch {}
-    });
+    res.on('close', () => { try { req.destroy(); } catch {} });
   });
 }
 

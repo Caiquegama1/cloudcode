@@ -1,0 +1,3701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CLOUDCODE">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="manifest" href="/manifest.json">
+<title>CLOUDCODE</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/xterm.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/xterm.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/addon-fit.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xterm/5.3.0/addon-web-links.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link id="hljsTheme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FFFFFF;
+  --surface:#F7F7F8;
+  --surface2:#EFEFF2;
+  --surface3:#FAFAFB;
+  --border:#E5E5E7;
+  --border2:#D8D8DE;
+  --accent:#7C5CFC;
+  --accent-light:#EEE9FF;
+  --accent-dim:rgba(124,92,252,.08);
+  --text:#111113;
+  --text-mid:#666677;
+  --text-dim:#9999A7;
+  --green:#22C55E;
+  --red:#EF4444;
+  --blue:#3B82F6;
+  --yellow:#F59E0B;
+  --radius:18px;
+  --radius-sm:10px;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 10px 28px rgba(16,24,40,.06);
+}
+[data-theme="dark"]{
+  --bg:#0F0F13;--surface:#1A1A22;--surface2:#242430;--surface3:#1A1A22;--border:#2E2E3A;--border2:#3A3A48;
+  --accent:#9B7FFF;--accent-light:rgba(155,127,255,.12);--accent-dim:rgba(155,127,255,.08);
+  --text:#EEEEF5;--text-mid:#8E8E9E;--text-dim:#5E5E6E;
+  --green:#22C55E;--red:#EF4444;--blue:#3B82F6;--yellow:#F59E0B;
+  --shadow:0 1px 2px rgba(0,0,0,.2),0 10px 28px rgba(0,0,0,.3)
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .3s ease,color .3s ease}
+button,input,textarea{font:inherit}
+button{border:none;background:none;color:inherit}
+body{user-select:none}
+textarea,input,.chat-md,.editor-pane{user-select:text}
+
+.app{height:100vh;display:flex;flex-direction:column;background:var(--bg)}
+.titlebar{
+  height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);
+  flex-shrink:0
+}
+.brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:-.02em}
+.brand svg{width:22px;height:22px}
+.brand span span{font-weight:400;color:var(--text-mid)}
+.titlebar-controls,.titlebar-center,.titlebar-right{display:flex;align-items:center;gap:10px;-webkit-app-region:no-drag}
+.titlebar-center{flex:1;min-width:0}
+.icon-btn{
+  width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-mid);transition:all .15s;background:transparent
+}
+.icon-btn:hover,.icon-btn.active{background:var(--surface);color:var(--text)}
+.workspace-pill{
+  display:flex;align-items:center;gap:10px;min-width:0;flex:1;padding:0 12px;height:36px;border-radius:12px;
+  background:var(--surface3);border:1px solid var(--border)
+}
+.workspace-pill input{
+  width:100%;background:none;border:none;outline:none;font-size:13px;color:var(--text)
+}
+.workspace-pill input::placeholder{color:var(--text-dim)}
+.status-pill{
+  display:flex;align-items:center;gap:6px;padding:0 12px;height:32px;border-radius:999px;
+  font-size:11px;font-weight:600;background:rgba(34,197,94,.08);color:var(--green)
+}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.32}}
+
+.shell{flex:1;display:grid;grid-template-columns:52px 260px 1fr 340px;min-height:0;overflow:hidden}
+.shell.sidebar-collapsed{grid-template-columns:52px 0 1fr 340px}
+
+/* ══ NO-EDITOR MODE: flexbox (grid + display:none = imprevisível) ══ */
+.shell.no-editor{
+  display:flex!important;          /* override grid */
+}
+.shell.no-editor .workspace{display:none!important}
+.shell.no-editor .sidebar{display:none!important}
+.shell.no-editor .activitybar{flex-shrink:0}
+.shell.no-editor .assistant{flex:1;min-width:0;border-left:none}
+/* sidebar aberta em no-editor */
+.shell.no-editor.sidebar-open .sidebar{display:flex!important;width:260px;flex-shrink:0}
+.shell.no-editor.sidebar-open .assistant{border-left:1px solid var(--border)}
+
+.assistant{border-left:1px solid var(--border)}
+.activitybar{
+  border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;
+  align-items:center;gap:8px;padding:12px 0
+}
+.activitybar .spacer{flex:1}
+.activity-btn{
+  width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-dim);transition:all .15s;position:relative
+}
+.activity-btn:hover,.activity-btn.active{background:var(--bg);color:var(--accent);box-shadow:var(--shadow)}
+.activity-btn.active::before{
+  content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:3px;border-radius:999px;background:var(--accent)
+}
+
+.sidebar{
+  border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;min-width:0
+}
+.sidebar.hidden{display:none}
+.sidebar-header{
+  height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--border)
+}
+.sidebar-title{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase}
+.sidebar-actions{display:flex;align-items:center;gap:6px}
+.sidebar-body{flex:1;min-height:0;overflow:auto;padding:12px}
+.sidebar-body::-webkit-scrollbar,.chat-scroll::-webkit-scrollbar,.tree-wrap::-webkit-scrollbar,.results-wrap::-webkit-scrollbar,.git-wrap::-webkit-scrollbar{width:5px}
+.sidebar-body::-webkit-scrollbar-thumb,.chat-scroll::-webkit-scrollbar-thumb,.tree-wrap::-webkit-scrollbar-thumb,.results-wrap::-webkit-scrollbar-thumb,.git-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px}
+
+.panel-block{display:flex;flex-direction:column;gap:12px;height:100%}
+.field{
+  width:100%;height:38px;padding:0 12px;border-radius:12px;border:1px solid var(--border);
+  background:var(--bg);outline:none;color:var(--text);font-size:13px
+}
+.field:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.helper{font-size:11px;color:var(--text-dim);line-height:1.5}
+
+.tree-wrap,.results-wrap,.git-wrap{display:flex;flex-direction:column;gap:4px;overflow:auto;min-height:0}
+.tree-node{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;font-size:13px;color:var(--text-mid);cursor:pointer}
+.tree-node:hover,.tree-node.active{background:var(--bg);color:var(--text)}
+.tree-indent{display:inline-block}
+.tree-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tree-folder{font-weight:600}
+.inline-row{display:flex;align-items:center;gap:8px}
+.inline-row .field{flex:1}
+
+.search-result,.git-item{
+  display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid var(--border);border-radius:12px;
+  background:var(--bg);cursor:pointer;transition:all .15s
+}
+.search-result:hover,.git-item:hover{border-color:var(--border2);box-shadow:var(--shadow)}
+.result-path,.git-path{font-size:12px;font-weight:600;color:var(--text)}
+.result-line,.git-meta{font-size:11px;color:var(--text-dim)}
+.result-preview,.git-preview{
+  font-size:12px;color:var(--text-mid);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.git-actions{display:flex;align-items:center;gap:8px;margin-top:4px}
+.micro-btn{
+  height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface3);
+  cursor:pointer;font-size:12px;font-weight:600;color:var(--text-mid);transition:all .15s
+}
+.micro-btn:hover{background:var(--bg);color:var(--text)}
+.micro-btn.primary{background:var(--accent-light);border-color:transparent;color:var(--accent)}
+
+.workspace{
+  display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)
+}
+.editor-tabs{
+  height:44px;border-bottom:1px solid var(--border);display:flex;align-items:end;padding:0 12px;gap:6px;overflow:auto;flex-shrink:0
+}
+.editor-tabs::-webkit-scrollbar{display:none}
+.tab{
+  height:34px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px 12px 0 0;
+  background:transparent;border:1px solid transparent;border-bottom:none;cursor:pointer;font-size:12px;color:var(--text-mid);
+  white-space:nowrap
+}
+.tab.active{background:var(--surface3);color:var(--text);border-color:var(--border)}
+.tab-dirty{width:7px;height:7px;border-radius:50%;background:var(--yellow)}
+.tab-close{opacity:.55}
+.tab:hover .tab-close{opacity:1}
+
+.editor-shell{flex:1;display:flex;flex-direction:column;min-height:0}
+.editor-toolbar{
+  height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--border);background:var(--surface3);flex-shrink:0
+}
+.editor-toolbar-left,.editor-toolbar-right{display:flex;align-items:center;gap:8px}
+.editor-caption{font-size:12px;color:var(--text-mid)}
+.editor-pane{
+  flex:1;display:flex;min-height:0;background:linear-gradient(180deg,var(--surface3) 0%,#fff 80%)
+}
+.editor-empty{
+  flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--text-dim)
+}
+.editor-empty strong{font-size:16px;color:var(--text)}
+.code-editor{
+  flex:1;border:none;outline:none;resize:none;background:transparent;color:var(--text);
+  padding:18px 20px;font-size:13px;line-height:1.6;font-family:"SF Mono","JetBrains Mono","Fira Code",monospace;
+  overflow:auto
+}
+.diff-view{
+  flex:1;overflow:auto;padding:18px 20px;font-size:12px;line-height:1.6;font-family:"SF Mono","JetBrains Mono","Fira Code",monospace;
+  background:transparent;white-space:pre-wrap;color:var(--text)
+}
+.diff-view .add{color:#15803D}
+.diff-view .remove{color:#B91C1C}
+.diff-view .meta{color:#4338CA}
+
+.terminal-drawer{
+  height:0;border-top:1px solid transparent;overflow:hidden;transition:height .18s ease;border-top-color:transparent;flex-shrink:0
+}
+.terminal-drawer.open{height:250px;border-top-color:var(--border);background:#171726}
+.terminal-header{
+  height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#1E1E31;color:#E5E7EB;border-bottom:1px solid rgba(255,255,255,.08)
+}
+.terminal-caption{font-size:12px;font-weight:600;color:#C7CAD7}
+.terminal-stage{display:flex;align-items:center;gap:8px}
+.terminal-btn{
+  height:26px;padding:0 10px;border-radius:8px;background:rgba(255,255,255,.06);color:#E5E7EB;cursor:pointer;font-size:12px
+}
+.terminal-btn:hover{background:rgba(255,255,255,.12)}
+.terminal-wrap{height:calc(100% - 38px);padding:10px}
+#terminal{height:100%}
+.xterm{height:100%!important}
+.xterm-viewport::-webkit-scrollbar{width:4px}
+.xterm-viewport::-webkit-scrollbar-thumb{background:#42446A;border-radius:999px}
+
+.assistant{
+  background:var(--bg);display:flex;flex-direction:column;min-width:0;min-height:0
+}
+.assistant-header{
+  height:52px;padding:0 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;background:var(--bg)
+}
+.assistant-title{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700}
+.assistant-title svg{width:18px;height:18px}
+.assistant-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim)}
+/* scroll area: flex:1 preenche todo o espaço disponível */
+.assistant-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.assistant-scroll::-webkit-scrollbar{width:5px}
+.assistant-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px}
+/* inner centra o conteúdo em max-width */
+.chat-scroll-inner{
+  display:flex;flex-direction:column;
+  max-width:900px;margin:0 auto;width:100%;
+  padding:24px 20px 12px;min-height:100%
+}
+.assistant-empty{
+  flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  color:var(--text-dim);text-align:center;padding:20px
+}
+.assistant-empty strong{font-size:20px;color:var(--text)}
+.chat-group{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;max-width:80%}
+.chat-group.user-group{align-self:flex-end;align-items:flex-end}
+.chat-group.ai-group{align-self:flex-start;align-items:flex-start;max-width:90%}
+.chat-role{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.chat-bubble{
+  padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:var(--bg);box-shadow:var(--shadow)
+}
+.chat-bubble.user{background:var(--accent-light);border-color:transparent;border-radius:18px 18px 6px 18px}
+.chat-group.ai-group .chat-bubble{border-radius:18px 18px 18px 6px}
+.chat-md{font-size:13px;line-height:1.65;color:var(--text)}
+.chat-md p{margin:0 0 10px}
+.chat-md p:last-child{margin:0}
+.chat-md ul,.chat-md ol{margin:8px 0 8px 18px}
+.chat-md code:not(.hljs){
+  padding:1px 5px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:"SF Mono",monospace;font-size:12px
+}
+.chat-md pre{margin:10px 0;padding:12px;border-radius:12px;overflow:auto;border:1px solid var(--border);background:var(--surface)}
+[data-theme="dark"] .chat-md pre{background:#16161E}
+[data-theme="dark"] .editor-pane{background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 80%)}
+[data-theme="dark"] .code-editor{color:var(--text)}
+.chat-md pre code{font-size:12px;line-height:1.55}
+.streaming-cursor{display:inline-block;width:7px;height:16px;background:var(--accent);border-radius:2px;vertical-align:middle;animation:blink .8s infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+
+.composer{
+  flex-shrink:0;border-top:1px solid var(--border);background:var(--bg);padding:12px 20px 14px;
+}
+.composer-inner{max-width:900px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:8px}
+.composer-box{
+  border:1px solid var(--border);background:var(--surface3);border-radius:18px;padding:12px 12px 10px;box-shadow:var(--shadow)
+}
+.composer-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.composer-text{
+  width:100%;min-height:72px;max-height:220px;border:none;outline:none;resize:none;background:none;color:var(--text);
+  font-size:14px;line-height:1.55
+}
+.composer-text::placeholder{color:var(--text-dim)}
+.composer-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.composer-actions,.composer-right{display:flex;align-items:center;gap:8px}
+.chip-btn{
+  height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--bg);
+  cursor:pointer;font-size:12px;font-weight:500;color:var(--text-mid);transition:all .15s;
+  display:flex;align-items:center;gap:5px
+}
+.chip-btn:hover{background:var(--surface);color:var(--text);border-color:var(--border2)}
+.chip-btn.ghost{border-color:transparent;background:transparent}
+.chip-btn.model{background:var(--accent-light);color:var(--accent);border-color:transparent;font-weight:600}
+.chip-btn.model:hover{background:var(--accent);color:#fff}
+.composer-icon-btn{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-dim);border:1px solid var(--border);background:var(--bg);transition:all .15s
+}
+.composer-icon-btn:hover{background:var(--surface);color:var(--text);border-color:var(--border2)}
+.send-btn{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:#fff;cursor:pointer;transition:all .15s
+}
+.send-btn:disabled{opacity:.2;cursor:default}
+.send-btn:hover:not(:disabled){opacity:.85;transform:scale(1.05)}
+
+.bottom-bar{
+  height:28px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:14px;padding:0 14px;font-size:11px;color:var(--text-dim);flex-shrink:0
+}
+.bottom-item{display:flex;align-items:center;gap:6px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+.overlay{
+  position:fixed;inset:0;background:rgba(12,12,20,.24);display:none;align-items:flex-start;justify-content:center;z-index:9999;padding-top:72px
+}
+.overlay.open{display:flex}
+.palette{
+  width:min(720px,calc(100vw - 32px));background:var(--bg);border:1px solid var(--border);border-radius:20px;box-shadow:0 20px 60px rgba(16,24,40,.18);overflow:hidden
+}
+.palette input{
+  width:100%;height:52px;padding:0 16px;border:none;outline:none;border-bottom:1px solid var(--border);font-size:14px
+}
+.palette-list{max-height:420px;overflow:auto;padding:8px}
+.palette-item{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:12px;cursor:pointer
+}
+.palette-item:hover,.palette-item.sel{background:var(--surface)}
+.palette-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.palette-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.palette-sub{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.palette-hint{font-size:11px;color:var(--text-dim);white-space:nowrap}
+
+.attach-preview{
+  display:none;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);
+  border-radius:12px;margin-bottom:8px
+}
+.attach-preview.active{display:flex}
+.attach-preview img{width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.attach-preview .attach-name{flex:1;font-size:12px;color:var(--text-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attach-preview .attach-remove{
+  width:24px;height:24px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;
+  justify-content:center;cursor:pointer;color:var(--text-dim);font-size:14px;font-weight:700
+}
+.attach-preview .attach-remove:hover{background:var(--red);color:#fff}
+.attach-btn{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-mid);transition:all .15s;background:var(--surface)
+}
+.attach-btn:hover{background:var(--surface2);color:var(--text)}
+/* Session drawer */
+.session-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:none;opacity:0;transition:opacity .2s}
+.session-overlay.open{display:block;opacity:1}
+.session-drawer{
+  position:fixed;top:0;left:0;bottom:0;width:300px;max-width:85vw;background:var(--bg);z-index:10001;
+  transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;
+  box-shadow:4px 0 24px rgba(0,0,0,.15)
+}
+.session-drawer.open{transform:translateX(0)}
+.session-drawer-header{
+  padding:20px 16px 14px;padding-top:calc(20px + env(safe-area-inset-top,0));
+  border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between
+}
+.session-drawer-header h3{font-size:16px;font-weight:800;color:var(--text)}
+.session-drawer-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px}
+.session-item{
+  padding:12px;border-radius:14px;cursor:pointer;margin-bottom:4px;transition:background .15s;
+  display:flex;align-items:flex-start;gap:10px
+}
+.session-item:hover,.session-item:active{background:var(--surface)}
+.session-item-content{flex:1;min-width:0}
+.session-item-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-item-meta{font-size:11px;color:var(--text-dim);margin-top:2px}
+.session-item-delete{
+  width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);cursor:pointer;flex-shrink:0;transition:all .15s
+}
+.session-item-delete:hover{background:var(--red);color:#fff}
+.session-empty{padding:40px 20px;text-align:center;color:var(--text-dim);font-size:13px}
+
+/* Mic button */
+.mic-btn{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-mid);background:var(--surface);border:1px solid var(--border);
+  transition:all .15s;flex-shrink:0
+}
+.mic-btn:hover{background:var(--surface2);color:var(--text)}
+.mic-btn.recording{background:var(--red);color:#fff;border-color:var(--red);animation:mic-pulse 1.2s infinite}
+.mic-btn.processing{background:var(--accent);color:#fff;border-color:var(--accent);animation:mic-spin 1s linear infinite}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.35)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
+@keyframes mic-spin{0%{box-shadow:0 0 0 0 rgba(99,102,241,.4)}50%{box-shadow:0 0 0 8px rgba(99,102,241,0)}}
+
+/* Completion banner */
+.completion-banner{
+  position:fixed;top:0;left:0;right:0;z-index:10002;
+  padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0));
+  background:var(--accent);color:#fff;font-size:14px;font-weight:600;text-align:center;
+  transform:translateY(-100%);transition:transform .3s ease;
+  box-shadow:0 4px 16px rgba(124,92,252,.3)
+}
+.completion-banner.show{transform:translateY(0)}
+
+/* Header action buttons */
+.header-actions{display:flex;align-items:center;gap:6px}
+.header-icon-btn{
+  width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-dim);transition:all .15s
+}
+.header-icon-btn:hover{background:var(--surface);color:var(--text)}
+
+/* Splash screen */
+.splash{
+  position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:var(--bg);transition:opacity .4s ease
+}
+.splash.hide{opacity:0;pointer-events:none}
+.splash-cloud{width:200px;height:200px;animation:cloudBounce 1.2s ease-in-out infinite}
+.splash-cloud svg{width:100%;height:100%}
+.splash-cloud .cloud-body{fill:#7C5CFC}
+.splash-cloud .cloud-eye{fill:#fff}
+.splash-cloud .cloud-smile{stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round}
+@keyframes cloudBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.splash-logo{font-size:28px;font-weight:800;letter-spacing:.12em;color:#8ECAE6;margin-top:20px;opacity:0;animation:fadeUp .5s ease .3s forwards}
+.splash-logo span{color:#FFD06E}
+.splash-by{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-top:6px;opacity:0;animation:fadeUp .5s ease .6s forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.hidden{display:none!important}
+
+@media (max-width:1280px){
+  .shell{grid-template-columns:52px 220px 1fr 300px}
+  .shell.sidebar-collapsed{grid-template-columns:52px 0 1fr 300px}
+  .shell.no-editor{grid-template-columns:52px 1fr}
+  .shell.no-editor.sidebar-open{grid-template-columns:52px 220px 1fr}
+}
+@media (max-width:960px){
+  .shell{grid-template-columns:52px 0 1fr 280px}
+  .shell.no-editor{grid-template-columns:52px 1fr}
+  .sidebar{display:none!important}
+}
+@media (max-width:720px){
+  .shell{grid-template-columns:52px 0 1fr 0}
+  .shell.no-editor{grid-template-columns:52px 1fr}
+  .assistant{display:none!important}
+}
+
+/* ═══════════════════════════════════════
+   MOBILE — iPhone-first  ✦  v3
+   Técnica: flex-chain completo html→body→.app→.shell→.assistant
+   SEM position:fixed no layout principal — única abordagem
+   100% confiável no iOS Safari e Android WebView.
+   ═══════════════════════════════════════ */
+@media (max-width:768px){
+
+  /* ── 1. RAIZ: trava viewport, não deixa colapsar ── */
+  html,body{
+    height:100%!important;
+    overflow:hidden!important;
+    position:fixed!important;  /* iOS: evita bounce que quebra 100vh */
+    width:100%!important;
+    top:0!important;left:0!important;
+  }
+
+  /* ── 2. .app: coluna flex full-height ── */
+  .app{
+    height:100%!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+
+  /* ── 3. TITLEBAR: permanece no flow (flex-shrink:0) ── */
+  .titlebar{
+    flex-shrink:0!important;
+    position:relative!important;  /* cancela qualquer position:fixed herdado */
+    height:52px!important;
+    padding:0 14px!important;
+    padding-top:env(safe-area-inset-top,0)!important;
+    background:var(--bg)!important;
+    border-bottom:1px solid var(--border)!important;
+    display:flex!important;
+    align-items:center!important;
+    z-index:10!important;
+  }
+  .titlebar-center,
+  #toggleSidebarBtn,
+  #quickOpenBtn,
+  #saveBtn,
+  .status-pill{display:none!important}
+  .brand{font-size:15px;font-weight:700}
+  .account-btn{height:30px;padding:0 10px;font-size:11px}
+
+  /* ── 4. SHELL: ocupa o restante, coluna flex ──
+     Sobrescreve tanto .shell quanto .shell.no-editor (que tem flex!important) */
+  .shell,.shell.no-editor,.shell.no-editor.sidebar-open{
+    flex:1!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    grid-template-columns:none!important;
+    overflow:hidden!important;
+  }
+
+  /* ── 5. OCULTAR ELEMENTOS DESKTOP ── */
+  .activitybar,
+  .sidebar,
+  .workspace,
+  .bottom-bar,
+  .mobile-nav,
+  .assistant-header,
+  .client-bar,
+  #pixelAgentsContainer,
+  .terminal-drawer,
+  #macExecOverlay{display:none!important}
+
+  /* ── 6. ASSISTANT: flex:1 dentro do shell ── */
+  .assistant,
+  .shell.no-editor .assistant,
+  .shell .assistant{
+    flex:1!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    border:none!important;
+    width:100%!important;
+    max-width:100%!important;
+    background:var(--bg)!important;
+    overflow:hidden!important;
+    position:static!important;  /* cancela qualquer position dos estilos do desktop */
+  }
+
+  /* ── 7. CHAT SCROLL: flex:1 + min-height:0 (chave do iOS) ── */
+  .assistant-scroll{
+    flex:1!important;
+    min-height:0!important;   /* SEM ISSO o iOS ignora overflow:auto */
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+  }
+  .chat-scroll-inner{
+    padding:16px 14px 8px;
+    max-width:100%;
+    padding-bottom:8px;
+  }
+
+  /* ── 8. COMPOSER: permanece no flow (flex-shrink:0) ── */
+  .composer{
+    position:relative!important; /* cancela qualquer fixed */
+    flex-shrink:0!important;
+    padding:8px 12px!important;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom,0))!important;
+    background:var(--bg)!important;
+    border-top:1px solid var(--border)!important;
+    z-index:10!important;
+  }
+  .composer-inner{padding:0;gap:6px}
+  .composer-box{
+    border-radius:20px;
+    padding:10px 12px 8px;
+    border:1.5px solid var(--border);
+    box-shadow:none;
+  }
+  .composer-box:focus-within{border-color:var(--accent)}
+  .composer-text{
+    min-height:44px;
+    max-height:120px;
+    font-size:16px;    /* iOS: previne zoom automático */
+    line-height:1.45;
+  }
+  .composer-row{margin-top:6px;gap:6px}
+  .composer-actions{
+    gap:5px;flex-wrap:nowrap;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .composer-actions::-webkit-scrollbar{display:none}
+
+  /* ── 9. BOTÕES ── */
+  #captureBtn,#contextBtn{display:none!important}
+  #micBtn{display:flex!important;width:42px!important;height:42px!important}
+  .send-btn{width:42px!important;height:42px!important;flex-shrink:0}
+  .attach-btn{width:34px!important;height:34px!important;border-radius:50%;flex-shrink:0}
+  .chip-btn{
+    height:32px;padding:0 12px;border-radius:20px;
+    font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;
+  }
+
+  /* ── 10. CHAT BUBBLES ── */
+  .chat-group{margin-bottom:14px;max-width:90%}
+  .chat-group.ai-group{max-width:98%}
+  .chat-role{font-size:11px;margin-bottom:4px}
+  .chat-bubble{border-radius:20px;padding:12px 15px}
+  .chat-bubble.user{border-radius:20px 20px 6px 20px}
+  .chat-md{font-size:15px;line-height:1.7;word-wrap:break-word;overflow-wrap:break-word}
+  .chat-md p{margin:0 0 8px}
+  .chat-md pre{
+    border-radius:12px;padding:12px;font-size:12px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    max-width:calc(100vw - 32px);
+  }
+  .chat-md img{max-width:100%;border-radius:12px}
+  .chat-md ul,.chat-md ol{margin:6px 0 6px 16px}
+
+  /* ── 11. OVERLAYS: tela cheia no mobile ── */
+  .overlay{padding-top:0!important;align-items:flex-start!important}
+  .palette{
+    position:fixed!important;top:0;left:0;right:0;bottom:0;
+    border-radius:0!important;width:100%!important;max-height:100vh!important;
+  }
+  .palette input{height:56px;font-size:16px}
+  .somacranio-modal{width:100vw!important;height:100vh!important;border-radius:0!important;border:none!important}
+  .somacranio-sidebar{width:150px}
+  .somacranio-search{width:120px}
+
+  /* ── 12. EMPTY STATE ── */
+  .assistant-empty{padding:40px 20px 20px}
+  .assistant-empty strong{font-size:20px}
+}
+@media (min-width:769px){
+  /* Garantir que o desktop não herde nada do mobile */
+  html,body{position:static!important;overflow:hidden!important;width:auto!important;height:100%!important}
+  .app{height:100vh!important;display:flex!important;flex-direction:column!important}
+  .titlebar{position:relative!important;flex-shrink:0!important}
+  .composer{position:relative!important}
+
+  .mobile-nav{display:none!important}
+  .mobile-view{display:none!important}
+  /* Features agora ativas tambem no desktop */
+  #sessionHistoryBtn{display:flex}
+  #darkModeBtn{display:flex}
+  .header-actions{display:flex;align-items:center;gap:6px}
+  .mic-btn{display:flex}
+}
+
+/* Skills Modal */
+.skills-overlay{position:fixed;inset:0;background:rgba(12,12,20,.32);display:none;align-items:center;justify-content:center;z-index:10001}
+.skills-overlay.open{display:flex}
+.skills-modal{
+  width:min(480px,calc(100vw - 32px));background:var(--bg);border:1px solid var(--border);
+  border-radius:20px;box-shadow:0 20px 60px rgba(16,24,40,.18);overflow:hidden;
+  max-height:min(600px,calc(100vh - 80px));display:flex;flex-direction:column
+}
+.skills-header{
+  display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+  border-bottom:1px solid var(--border)
+}
+.skills-header h3{font-size:15px;font-weight:700;color:var(--text)}
+.skills-close{
+  width:28px;height:28px;border-radius:50%;border:none;background:var(--surface);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-mid)
+}
+.skills-close:hover{background:var(--surface2);color:var(--text)}
+.skills-list{padding:8px;overflow-y:auto;flex:1}
+.skills-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;
+  cursor:pointer;transition:background .12s
+}
+.skills-item:hover{background:var(--surface)}
+.skills-item-icon{
+  width:36px;height:36px;border-radius:10px;background:var(--accent-light);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  color:var(--accent)
+}
+.skills-item-text{flex:1;min-width:0}
+.skills-item-name{font-size:13px;font-weight:600;color:var(--text)}
+.skills-item-desc{font-size:11px;color:var(--text-dim);margin-top:2px}
+.skills-input-wrap{
+  padding:12px 20px 16px;border-top:1px solid var(--border);display:none;
+  flex-direction:column;gap:10px
+}
+.skills-input-wrap.active{display:flex}
+.skills-input-wrap h4{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.skills-input-wrap textarea{
+  width:100%;min-height:72px;max-height:160px;resize:vertical;border:1.5px solid var(--border);
+  border-radius:12px;padding:10px 12px;font-size:13px;font-family:'Inter',sans-serif;
+  background:var(--bg);color:var(--text);outline:none;line-height:1.5
+}
+.skills-input-wrap textarea:focus{border-color:var(--accent)}
+.skills-run-btn{
+  height:36px;padding:0 20px;border-radius:999px;border:none;background:var(--accent);
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;align-self:flex-end;
+  transition:opacity .15s
+}
+.skills-run-btn:hover{opacity:.85}
+.skills-run-btn:disabled{opacity:.4;cursor:default}
+.skills-back{
+  font-size:12px;color:var(--text-dim);cursor:pointer;border:none;background:none;
+  padding:0;text-decoration:underline
+}
+.skills-back:hover{color:var(--text)}
+
+/* Client selector */
+.client-bar{
+  display:flex;align-items:center;gap:8px;padding:6px 20px;
+  border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0
+}
+.client-select{
+  flex:1;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--bg);
+  font-size:12px;font-family:'Inter',sans-serif;color:var(--text);padding:0 8px;
+  cursor:pointer;outline:none
+}
+.client-select:focus{border-color:var(--accent)}
+.client-add-btn{
+  width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--bg);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-mid);
+  font-size:16px;transition:all .12s
+}
+.client-add-btn:hover{background:var(--surface);color:var(--accent);border-color:var(--accent)}
+.client-avatar{
+  width:28px;height:28px;border-radius:8px;background:var(--accent-light);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0
+}
+
+/* Client modal */
+.client-overlay{position:fixed;inset:0;background:rgba(12,12,20,.32);display:none;align-items:center;justify-content:center;z-index:10002}
+.client-overlay.open{display:flex}
+.client-modal{
+  width:min(420px,calc(100vw - 32px));background:var(--bg);border:1px solid var(--border);
+  border-radius:20px;box-shadow:0 20px 60px rgba(16,24,40,.18);overflow:hidden;padding:20px
+}
+.client-modal h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px}
+.client-field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.client-field label{font-size:11px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px}
+.client-field input,.client-field textarea{
+  border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;
+  font-size:13px;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);outline:none
+}
+.client-field input:focus,.client-field textarea:focus{border-color:var(--accent)}
+.client-field textarea{min-height:60px;resize:vertical;line-height:1.4}
+.client-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.client-cancel-btn{
+  height:34px;padding:0 16px;border-radius:999px;border:1px solid var(--border);
+  background:var(--bg);color:var(--text-mid);font-size:12px;font-weight:600;cursor:pointer
+}
+.client-save-btn{
+  height:34px;padding:0 20px;border-radius:999px;border:none;background:var(--accent);
+  color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .15s
+}
+.client-save-btn:hover{opacity:.85}
+.client-save-btn:disabled{opacity:.4;cursor:default}
+
+/* ══ MAC AGENT ══ */
+.mac-preset{
+  padding:10px 14px;font-size:13px;color:var(--text-mid);cursor:pointer;
+  border-bottom:1px solid var(--border);transition:background .12s
+}
+.mac-preset:last-child{border-bottom:none}
+.mac-preset:hover{background:var(--surface);color:var(--text)}
+
+/* ══ ACCOUNT SWITCHER ══ */
+.account-switcher{position:relative;-webkit-app-region:no-drag}
+.account-btn{
+  height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border);
+  background:var(--surface);font-size:11px;font-weight:600;color:var(--text-mid);
+  cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap
+}
+.account-btn:hover{background:var(--surface2);color:var(--text)}
+.account-btn.acc-1{background:var(--accent-light);color:var(--accent);border-color:transparent}
+.account-btn.acc-2{background:rgba(34,197,94,.08);color:var(--green);border-color:transparent}
+.account-dropdown{
+  position:absolute;right:0;top:calc(100% + 6px);
+  background:var(--bg);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 8px 30px rgba(16,24,40,.12);min-width:160px;overflow:hidden;z-index:10020;
+  opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity .15s,transform .15s
+}
+.account-dropdown.open{opacity:1;transform:translateY(0);pointer-events:all}
+.account-dropdown-header{padding:8px 12px 4px;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase}
+.account-item{
+  padding:10px 14px;font-size:13px;font-weight:500;color:var(--text-mid);cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  transition:background .12s
+}
+.account-item:hover{background:var(--surface);color:var(--text)}
+.account-item.active{color:var(--accent);font-weight:600}
+.account-item .acc-check{
+  width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:10px;opacity:0;transition:opacity .12s
+}
+.account-item.active .acc-check{opacity:1}
+
+/* ══ SOMACRANIO ══ */
+.somacranio-overlay{
+  position:fixed;inset:0;background:rgba(12,12,20,.4);
+  display:none;align-items:center;justify-content:center;z-index:10010;
+  backdrop-filter:blur(4px)
+}
+.somacranio-overlay.open{display:flex}
+.somacranio-modal{
+  width:min(900px,calc(100vw - 32px));height:min(680px,calc(100vh - 60px));
+  background:var(--bg);border:1px solid var(--border);border-radius:20px;
+  box-shadow:0 24px 64px rgba(16,24,40,.22);overflow:hidden;
+  display:flex;flex-direction:column
+}
+.somacranio-header{
+  height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0;gap:12px
+}
+.somacranio-title{
+  display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;
+  letter-spacing:.06em;color:var(--text)
+}
+.somacranio-title svg{color:var(--accent)}
+.somacranio-search{
+  width:200px;height:32px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface);padding:0 10px;font-size:13px;color:var(--text);
+  outline:none;font-family:'Inter',sans-serif
+}
+.somacranio-search:focus{border-color:var(--accent)}
+.somacranio-body{
+  flex:1;display:flex;min-height:0;overflow:hidden
+}
+.somacranio-sidebar{
+  width:240px;flex-shrink:0;border-right:1px solid var(--border);
+  overflow-y:auto;padding:8px;background:var(--surface3)
+}
+.somacranio-sidebar::-webkit-scrollbar{width:4px}
+.somacranio-sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px}
+.somacranio-content{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.somacranio-loading{padding:20px;font-size:13px;color:var(--text-dim);text-align:center}
+.somacranio-empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;color:var(--text-dim);text-align:center;padding:32px
+}
+.somacranio-empty svg{opacity:.3}
+.somacranio-empty strong{font-size:16px;color:var(--text);font-weight:700}
+.somacranio-viewer{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.somacranio-viewer-header{
+  height:44px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;background:var(--surface3)
+}
+.somacranio-viewer-title{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.somacranio-md{
+  flex:1;overflow-y:auto;padding:24px;font-size:14px;line-height:1.7
+}
+.somacranio-md::-webkit-scrollbar{width:5px}
+.somacranio-md::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px}
+.somacranio-footer{
+  height:40px;border-top:1px solid var(--border);display:flex;align-items:center;
+  padding:0 16px;gap:12px;flex-shrink:0;background:var(--surface3)
+}
+/* Arvore de notas */
+.soma-node{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
+  font-size:13px;color:var(--text-mid);cursor:pointer;user-select:none;line-height:1.3
+}
+.soma-node:hover{background:var(--bg);color:var(--text)}
+.soma-node.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.soma-node.is-folder{font-weight:600;color:var(--text)}
+.soma-node.is-folder:hover{background:var(--bg)}
+.soma-node .soma-icon{flex-shrink:0;opacity:.6;width:14px;height:14px}
+.soma-node.active .soma-icon{opacity:1}
+.soma-children{margin-left:14px}
+@media (max-width:600px){
+  .somacranio-modal{width:calc(100vw - 16px);height:calc(100vh - 32px);border-radius:16px}
+  .somacranio-sidebar{width:180px}
+  .somacranio-search{width:140px}
+}
+</style>
+</head>
+<body>
+<!-- SPLASH SCREEN -->
+<div id="splash" class="splash">
+  <div class="splash-cloud">
+    <img src="/nuvem.png" style="width:100%;height:100%;object-fit:contain" alt=""/>
+  </div>
+  <div class="splash-logo">CLOUD<span>CODE</span></div>
+  <div class="splash-by">by Digital SOMA</div>
+</div>
+
+<div class="app">
+  <div class="titlebar">
+    <div class="brand">
+      <img src="/nuvem.png" style="width:26px;height:26px;object-fit:contain" alt=""/>
+      <span>CLOUD<span>CODE</span></span>
+    </div>
+    <div class="titlebar-center">
+      <div class="workspace-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M12 12l9-4.5"/><path d="M12 12L3 7.5"/><path d="M12 12v9"/></svg>
+        <input id="workspaceInput" placeholder="Workspace" style="display:none"/>
+      </div>
+    </div>
+    <div class="titlebar-right">
+      <button class="icon-btn" id="toggleSidebarBtn" title="Sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      </button>
+      <button class="icon-btn" id="quickOpenBtn" title="Abrir arquivo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn" id="saveBtn" title="Salvar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      </button>
+      <!-- Account Switcher -->
+      <div class="account-switcher" id="accountSwitcher">
+        <button class="account-btn acc-1" id="accountBtn" title="Trocar conta">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="accountBtnLabel">Conta 1</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="account-dropdown" id="accountDropdown">
+          <div class="account-dropdown-header">Conta ativa</div>
+          <div class="account-item active" data-account="1" id="accItem1">
+            Conta 1 · caiquegama1
+            <span class="acc-check">✓</span>
+          </div>
+          <div class="account-item" data-account="2" id="accItem2">
+            Conta 2 · digitaisoma
+            <span class="acc-check">✓</span>
+          </div>
+        </div>
+      </div>
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Conectando...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell no-editor" id="shell">
+    <div class="activitybar">
+      <button class="activity-btn active" data-panel="explorer" title="Explorer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M12 12l9-4.5"/><path d="M12 12L3 7.5"/><path d="M12 12v9"/></svg>
+      </button>
+      <button class="activity-btn" data-panel="search" title="Busca">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="activity-btn" data-panel="git" title="Git">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M8.59 7.51l6.83 8.98"/><path d="M8.59 7.51l6.82-1.02"/></svg>
+      </button>
+      <div class="spacer"></div>
+      <button class="activity-btn" id="terminalToggleBtn" title="Terminal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      </button>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title" id="sidebarTitle">Explorer</div>
+        <div class="sidebar-actions">
+          <button class="icon-btn" id="sidebarRefreshBtn" title="Atualizar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.13 3.36L1 14"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar-body">
+        <div class="panel-block" id="panelExplorer">
+          <div class="inline-row">
+            <button class="micro-btn" id="openWorkspaceBtn">Abrir</button>
+            <button class="micro-btn" id="newFileBtn">Novo arquivo</button>
+          </div>
+          <div class="helper" id="workspaceHelper">Selecione um workspace para começar.</div>
+          <div class="tree-wrap" id="treeWrap"></div>
+        </div>
+
+        <div class="panel-block hidden" id="panelSearch">
+          <input class="field" id="searchInput" placeholder="Buscar no workspace"/>
+          <div class="helper">Procura por conteúdo dentro dos arquivos.</div>
+          <div class="results-wrap" id="searchResults"></div>
+        </div>
+
+        <div class="panel-block hidden" id="panelGit">
+          <div class="inline-row">
+            <button class="micro-btn" id="gitRefreshBtn">Atualizar</button>
+            <button class="micro-btn" id="gitStageAllBtn">Stage all</button>
+            <button class="micro-btn primary" id="gitCommitBtn">Commit</button>
+          </div>
+          <div class="helper" id="gitBranchInfo">Sem git</div>
+          <div class="git-wrap" id="gitResults"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <div class="editor-tabs" id="editorTabs"></div>
+
+      <div class="editor-shell">
+        <div class="editor-toolbar">
+          <div class="editor-toolbar-left">
+            <div class="editor-caption" id="editorCaption">Nenhum arquivo aberto</div>
+            <span class="editor-caption" id="selectionCaption"></span>
+          </div>
+          <div class="editor-toolbar-right">
+            <button class="micro-btn" id="showDiffBtn">Diff</button>
+            <button class="micro-btn primary" id="saveFileBtn">Salvar</button>
+          </div>
+        </div>
+
+        <div class="editor-pane" id="editorPane">
+          <div class="editor-empty" id="editorEmpty">
+            <strong>Seu workspace está pronto</strong>
+            <div>Abra um arquivo no explorer ou use <code>Cmd + P</code>.</div>
+          </div>
+          <textarea class="code-editor hidden" id="codeEditor" spellcheck="false"></textarea>
+          <pre class="diff-view hidden" id="diffView"></pre>
+        </div>
+
+        <div class="terminal-drawer" id="terminalDrawer">
+          <div class="terminal-header">
+            <div class="terminal-caption">Terminal</div>
+            <div class="terminal-stage">
+              <button class="terminal-btn" id="terminalClaudeBtn">claude</button>
+              <button class="terminal-btn" id="terminalClearBtn">limpar</button>
+              <button class="terminal-btn" id="terminalCloseBtn">fechar</button>
+            </div>
+          </div>
+          <div class="terminal-wrap">
+            <div id="terminal"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="assistant">
+      <div class="assistant-header">
+        <div class="assistant-title">
+          <img src="/icon-192.png" style="width:22px;height:22px;border-radius:6px" alt=""/>
+          <span>Claude Code</span>
+        </div>
+        <div class="header-actions">
+          <button class="header-icon-btn" id="sessionHistoryBtn" title="Historico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </button>
+          <button class="header-icon-btn" id="darkModeBtn" title="Dark mode">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button class="header-icon-btn" id="ttsToggleBtn" title="Voz OFF — clique para ligar" onclick="toggleTTS()" style="opacity:0.45" title="Voz OFF">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+          <div class="assistant-meta">
+            <span id="assistantModel">Sonnet</span>
+            <span>·</span>
+            <span id="assistantSession">nova sessão</span>
+          </div>
+        </div>
+      </div>
+      <div class="client-bar">
+        <div class="client-avatar" id="clientAvatar" style="display:none"></div>
+        <select class="client-select" id="clientSelect">
+          <option value="">Sem cliente</option>
+        </select>
+        <button class="client-add-btn" id="clientAddBtn" title="Novo cliente">+</button>
+      </div>
+      <div class="assistant-scroll chat-scroll" id="chatScroll">
+        <div class="assistant-empty" id="assistantEmpty">
+          <img src="/nuvem.png" style="width:64px;height:64px;object-fit:contain;opacity:.6;margin-bottom:4px" alt=""/>
+          <strong>O que você quer fazer?</strong>
+          <div style="max-width:260px;line-height:1.6">Pergunte qualquer coisa, peça para editar arquivos, escrever código ou criar conteúdo.</div>
+        </div>
+      </div>
+      <!-- Pixel Agents Canvas (oculto, ativado por JS) -->
+      <div id="pixelAgentsContainer" style="overflow:hidden;transition:height .3s ease;height:0;flex-shrink:0">
+        <canvas id="pixelAgentsCanvas" style="width:100%;display:block"></canvas>
+      </div>
+
+      <div class="composer">
+        <div class="composer-inner">
+        <!-- ECO MODE (injetado via JS) -->
+        <div id="ecoModeContainer" style="display:none"></div>
+        <div class="attach-preview" id="attachPreview">
+          <img id="attachThumb" src="" alt=""/>
+          <span class="attach-name" id="attachName"></span>
+          <div class="attach-remove" id="attachRemove">&times;</div>
+        </div>
+        <div class="composer-box">
+          <textarea class="composer-text" id="chatInput" placeholder="Digite o que você quer fazer..."></textarea>
+          <div class="composer-row">
+            <div class="composer-actions">
+              <button class="composer-icon-btn" id="attachBtn" title="Anexar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <button class="chip-btn" id="newSessionBtn">Nova sessao</button>
+              <button class="chip-btn" id="captureBtn">Compactar</button>
+              <button class="chip-btn" id="skillsBtn" title="Skills">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Skills
+              </button>
+              <button class="chip-btn" id="macExecBtn" title="Executar no Mac" style="gap:4px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                Mac
+              </button>
+              <button class="chip-btn" id="somacranioBtn" title="SOMACRANIO — Notas do sistema" style="gap:4px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14Z"/></svg>
+                SOMACRANIO
+              </button>
+            </div>
+            <div class="composer-right">
+              <button class="mic-btn" id="micBtn" title="Mic">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </button>
+              <button class="chip-btn model" id="modelBtn">Sonnet</button>
+              <button class="send-btn" id="sendBtn" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="attachInput" accept="image/*" style="display:none"/>
+        </div><!-- /composer-inner -->
+      </div>
+    </aside>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="bottom-item"><div class="dot"></div><span id="bottomStatus">claude carregando</span></div>
+    <div class="bottom-item"><span id="bottomWorkspace">sem workspace</span></div>
+    <div class="bottom-item"><span id="bottomFile">nenhum arquivo</span></div>
+    <div class="bottom-item" style="margin-left:auto"><span id="bottomMeta">CLOUDCODE</span></div>
+  </div>
+
+  <!-- Mobile Nav -->
+  <nav class="mobile-nav" id="mobileNav">
+    <div class="mobile-nav-btn active" data-view="chat" onclick="switchMobileView('chat')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Chat
+    </div>
+    <div class="mobile-nav-btn" data-view="files" onclick="switchMobileView('files')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      Arquivos
+    </div>
+    <div class="mobile-nav-btn" data-view="settings" onclick="switchMobileView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Config
+    </div>
+  </nav>
+</div>
+
+<!-- Session History Drawer -->
+<div class="session-overlay" id="sessionOverlay"></div>
+<div class="session-drawer" id="sessionDrawer">
+  <div class="session-drawer-header">
+    <h3>Historico</h3>
+    <button class="header-icon-btn" id="sessionDrawerClose">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="session-drawer-body" id="sessionList"></div>
+</div>
+
+<!-- Completion Banner -->
+<div class="completion-banner" id="completionBanner">Claude terminou a resposta</div>
+
+<div class="overlay" id="quickOpenOverlay">
+  <div class="palette">
+    <input id="quickOpenInput" placeholder="Abrir arquivo..."/>
+    <div class="palette-list" id="quickOpenList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="commandOverlay">
+  <div class="palette">
+    <input id="commandInput" placeholder="Comandos..."/>
+    <div class="palette-list" id="commandList"></div>
+  </div>
+</div>
+
+<!-- Client Modal -->
+<div class="client-overlay" id="clientOverlay">
+  <div class="client-modal">
+    <h3>Novo Cliente</h3>
+    <div class="client-field"><label>Nome</label><input id="clientName" placeholder="Ex: Restaurante Sabor"/></div>
+    <div class="client-field"><label>Nicho</label><input id="clientNiche" placeholder="Ex: Gastronomia"/></div>
+    <div class="client-field"><label>Tom de voz</label><input id="clientTone" placeholder="Ex: Descontraido e jovem"/></div>
+    <div class="client-field"><label>Descricao</label><textarea id="clientDesc" placeholder="Sobre o cliente..."></textarea></div>
+    <div style="margin:12px 0 8px;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Estilo Visual</div>
+    <div class="client-field"><label>Mood</label><input id="clientMood" placeholder="Ex: dark, luxury, minimal, vibrant"/></div>
+    <div class="client-field"><label>Lighting</label><input id="clientLighting" placeholder="Ex: dramatic, soft, neon, natural"/></div>
+    <div class="client-field"><label>Color</label><input id="clientColor" placeholder="Ex: warm, cold, neutral, pastel"/></div>
+    <div class="client-field"><label>Referencia</label><input id="clientReference" placeholder="Ex: apple, nike, cinematic, editorial"/></div>
+    <div class="client-modal-actions">
+      <button class="client-cancel-btn" id="clientCancelBtn">Cancelar</button>
+      <button class="client-save-btn" id="clientSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skills Modal -->
+<div class="skills-overlay" id="skillsOverlay">
+  <div class="skills-modal">
+    <div class="skills-header">
+      <h3 id="skillsTitle">Skills</h3>
+      <button class="skills-close" id="skillsClose">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="skills-list" id="skillsList"></div>
+    <div class="skills-input-wrap" id="skillsInputWrap">
+      <h4><button class="skills-back" id="skillsBack">&larr; Voltar</button> <span id="skillsSelectedName"></span></h4>
+      <textarea id="skillsInput" placeholder="Descreva o tema, perfil ou ideia..."></textarea>
+      <button class="skills-run-btn" id="skillsRunBtn" disabled>Executar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAC AGENT MODAL ══ -->
+<div class="overlay" id="macExecOverlay" style="align-items:center;justify-content:center;padding-top:0">
+  <div style="width:min(520px,calc(100vw - 24px));background:var(--bg);border:1px solid var(--border);border-radius:20px;box-shadow:0 20px 60px rgba(16,24,40,.18);overflow:hidden;padding:0">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Executar no Mac
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="macStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim)"></div>
+        <span id="macStatusLabel" style="font-size:11px;color:var(--text-dim)">Verificando...</span>
+        <button class="header-icon-btn" id="macExecClose">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.5">
+        Executa comandos diretamente no seu Mac. O Mac Agent deve estar rodando:<br>
+        <code style="background:var(--surface);padding:2px 6px;border-radius:6px;font-size:11px">node mac-agent.js</code>
+      </div>
+      <textarea id="macExecInput" placeholder="open -a 'Figma'&#10;say 'Olá, mundo'&#10;open https://digitaisoma.com" style="width:100%;height:100px;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;font-family:'SF Mono','JetBrains Mono',monospace;background:var(--surface);color:var(--text);resize:vertical;outline:none;line-height:1.5"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="micro-btn" style="flex:1" id="macExecPresets">Exemplos ▾</button>
+        <button class="micro-btn primary" id="macExecRun" style="flex:2;height:36px;font-size:13px;font-weight:600">▶ Executar</button>
+      </div>
+      <div id="macExecResult" style="display:none;border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface);font-size:12px;font-family:'SF Mono','JetBrains Mono',monospace;white-space:pre-wrap;max-height:160px;overflow-y:auto;line-height:1.5"></div>
+      <!-- Presets -->
+      <div id="macExecPresetList" style="display:none;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg)">
+        <div class="mac-preset" data-cmd="open -a 'Figma'">🎨 Abrir Figma</div>
+        <div class="mac-preset" data-cmd="open -a 'Google Chrome'">🌐 Abrir Chrome</div>
+        <div class="mac-preset" data-cmd="open -a 'Visual Studio Code'">💻 Abrir VS Code</div>
+        <div class="mac-preset" data-cmd="open -a 'Obsidian'">🧠 Abrir Obsidian</div>
+        <div class="mac-preset" data-cmd="say 'Comando executado com sucesso'">🔊 Text to speech</div>
+        <div class="mac-preset" data-cmd="screencapture -x /tmp/screenshot.png &amp;&amp; open /tmp/screenshot.png">📸 Screenshot</div>
+        <div class="mac-preset" data-cmd="osascript -e 'display notification &quot;CLOUDCODE&quot; with title &quot;Notificação&quot;'">🔔 Notificação</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SOMACRANIO MODAL ══ -->
+<div class="somacranio-overlay" id="somacranioOverlay">
+  <div class="somacranio-modal" id="somacranioModal">
+    <div class="somacranio-header">
+      <div class="somacranio-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14Z"/></svg>
+        SOMACRANIO
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="somacranio-search" id="somacranioSearch" placeholder="Buscar nota..."/>
+        <button class="header-icon-btn" id="somacranioClose">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="somacranio-body">
+      <div class="somacranio-sidebar" id="somacranioTree">
+        <div class="somacranio-loading" id="somacranioLoading">Carregando notas...</div>
+      </div>
+      <div class="somacranio-content" id="somacranioContent">
+        <div class="somacranio-empty" id="somacranioEmpty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14Z"/></svg>
+          <strong>Selecione uma nota</strong>
+          <div>Clique em um arquivo .md para visualizar</div>
+        </div>
+        <div class="somacranio-viewer hidden" id="somacranioViewer">
+          <div class="somacranio-viewer-header">
+            <span class="somacranio-viewer-title" id="somacranioViewerTitle"></span>
+            <button class="micro-btn" id="somacranioSendToChat">Enviar ao chat</button>
+          </div>
+          <div class="somacranio-md chat-md" id="somacranioMd"></div>
+        </div>
+      </div>
+    </div>
+    <div class="somacranio-footer">
+      <span id="somacranioVaultPath" style="font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1"></span>
+      <button class="micro-btn" id="somacranioChangeVault">Mudar vault</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="toastOverlay" style="display:none;background:none;justify-content:center;align-items:flex-end;padding-bottom:40px;pointer-events:none">
+  <div style="padding:10px 16px;border-radius:12px;background:var(--text);color:#fff;font-size:13px;font-weight:600;box-shadow:var(--shadow)" id="toastText"></div>
+</div>
+
+<script>
+const state = {
+  sidebarVisible: false,
+  panel: 'explorer',
+  workspaceRoot: '',
+  workspaceFiles: [],
+  tree: [],
+  gitStatus: null,
+  openFiles: [],
+  fileState: new Map(),
+  activePath: null,
+  activeDiffPath: null,
+  model: 'sonnet',
+  chatSessionId: null,
+  chatBusy: false,
+  chatMessages: [],
+  attachedImage: null, // { path, name, objectUrl }
+  darkMode: false,
+  isRecording: false,
+  sessionHistory: [],
+  claudeVersion: '',
+  claudePath: '',
+  terminalOpen: false,
+  quickOpenIndex: 0,
+  commandIndex: 0,
+};
+
+const commands = [
+  { id: 'save', title: 'Salvar arquivo', hint: 'Cmd+S', action: () => saveActiveFile() },
+  { id: 'quick-open', title: 'Abrir arquivo', hint: 'Cmd+P', action: () => openQuickOpen() },
+  { id: 'toggle-terminal', title: 'Mostrar terminal', hint: 'Cmd+J', action: () => toggleTerminal(true) },
+  { id: 'focus-chat', title: 'Focar chat', hint: 'Cmd+L', action: () => focusChat() },
+  { id: 'reload-workspace', title: 'Atualizar workspace', hint: 'Reload', action: () => refreshWorkspace() },
+  { id: 'new-session', title: 'Nova sessao Claude', hint: 'Chat', action: () => resetChatSession() },
+  { id: 'commit', title: 'Commit git', hint: 'Git', action: () => promptCommit() },
+  { id: 'capture', title: 'Capturar tela inteira', hint: 'Cmd+Shift+1', action: () => handleCaptureShortcut() },
+];
+
+let term = null;
+let fitAddon = null;
+let termSocket = null;
+
+marked.setOptions({ breaks: true, gfm: true });
+
+window.addEventListener('load', init);
+window.addEventListener('cloudcode:capture-shortcut', handleCaptureShortcut);
+
+// ═══ PIXEL AGENTS FUNCTIONS ═══
+function togglePixelAgents() {
+  if (!window.PixelAgents) return;
+  window.PixelAgents.toggle();
+  updatePixelAgentsVisibility();
+}
+
+function updatePixelAgentsVisibility() {
+  const container = document.getElementById('pixelAgentsContainer');
+  if (!container || !window.PixelAgents) return;
+  const enabled = window.PixelAgents.isEnabled();
+  container.style.height = enabled ? '180px' : '0px';
+  container.style.borderTopWidth = enabled ? '1px' : '0';
+  const btn = document.getElementById('pixelAgentsToggle');
+  if (btn) btn.classList.toggle('model', enabled);
+}
+
+// Hook pixel agents into chat flow
+function updatePixelAgentFromChat(isActive, toolName) {
+  if (!window.PixelAgents) return;
+  if (isActive) {
+    window.PixelAgents.setAgentState('claude-main', 'active');
+    if (toolName) window.PixelAgents.setAgentTool('claude-main', toolName);
+  } else {
+    window.PixelAgents.setAgentState('claude-main', 'done');
+    setTimeout(() => window.PixelAgents.setAgentState('claude-main', 'idle'), 2000);
+  }
+}
+
+// ═══ MOBILE ═══
+const isMobile = window.innerWidth <= 768;
+let currentMobileView = 'chat';
+
+function switchMobileView(view) {
+  if (!isMobile) return;
+  currentMobileView = view;
+
+  // Nav buttons
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+
+  // Chat view (assistant panel)
+  const assistant = document.querySelector('.assistant');
+  if (assistant) {
+    assistant.style.display = view === 'chat' ? 'flex' : 'none';
+  }
+
+  // Terminal
+  const termDrawer = document.querySelector('.terminal-drawer');
+  if (termDrawer) {
+    if (view === 'terminal') {
+      termDrawer.style.cssText = 'display:flex!important;flex:1;height:auto;border-top:none;overflow:hidden;flex-direction:column;background:#171726';
+      if (term && fitAddon) setTimeout(() => fitAddon.fit(), 50);
+      if (!state.terminalOpen) toggleTerminal(true);
+    } else {
+      termDrawer.style.cssText = '';
+    }
+  }
+
+  // Files - reuse sidebar content
+  let filesView = document.getElementById('mobileFilesView');
+  if (view === 'files') {
+    if (!filesView) {
+      filesView = document.createElement('div');
+      filesView.id = 'mobileFilesView';
+      filesView.style.cssText = 'flex:1;overflow:auto;padding:16px;background:var(--bg)';
+      filesView.innerHTML = '<div style="font-size:18px;font-weight:700;margin-bottom:16px">Arquivos</div><div id="mobileTreeWrap"></div>';
+      document.querySelector('.shell').after(filesView);
+    }
+    filesView.style.display = 'block';
+    // Clone tree
+    const treeSource = document.querySelector('.tree-wrap');
+    const mobileDest = document.getElementById('mobileTreeWrap');
+    if (treeSource && mobileDest) {
+      mobileDest.innerHTML = treeSource.innerHTML;
+      // Re-bind clicks
+      mobileDest.querySelectorAll('.tree-node').forEach(node => {
+        node.addEventListener('click', () => {
+          const path = node.dataset.path;
+          const isDir = node.dataset.dir === 'true';
+          if (!isDir && path) {
+            openFile(path);
+            switchMobileView('chat');
+          }
+        });
+      });
+    }
+  } else if (filesView) {
+    filesView.style.display = 'none';
+  }
+}
+
+async function init() {
+  loadThemePreference();
+  loadSessionHistory();
+  setupSpeechRecognition();
+  setupAudioUnlock();
+  setupVisibilityTracking();
+  bindUI();
+  setupTerminal();
+  await loadStatus();
+  await bootWorkspace();
+  loadClients();
+  renderCommandPalette('');
+  updateStatus(true, 'Pronto');
+  if (isMobile) switchMobileView('chat');
+
+  // ═══ CHAT-FIRST UX ═══
+  // Garantir estado inicial colapsado + sem editor
+  applyNoEditorMode();
+
+  // ETAPA 1+2 — Focar input automaticamente após splash
+  setTimeout(() => focusChat(), 2200);
+
+  // Initialize Pixel Agents
+  if (window.PixelAgents) {
+    window.PixelAgents.init('pixelAgentsCanvas');
+    window.PixelAgents.addAgent('claude-main', 'Claude', 0);
+    updatePixelAgentsVisibility();
+  }
+
+  // Initialize ECO MODE
+  if (window.EcoMode) {
+    window.EcoMode.init('ecoModeContainer');
+  }
+
+  // Initialize Mac Agent UI + Command polling
+  initMacAgent();
+  startCmdPolling();
+
+  // TTS: sync estado do botão
+  const ttsBtn = document.getElementById('ttsToggleBtn');
+  if (ttsBtn) {
+    ttsBtn.style.opacity = ttsEnabled ? '1' : '0.45';
+    ttsBtn.title = ttsEnabled ? 'Voz ON — clique para desligar' : 'Voz OFF — clique para ligar';
+  }
+
+  // Initialize Account Switcher
+  initAccountSwitcher();
+  await loadAccountState();
+
+  // Initialize SOMACRANIO
+  initSomacranio();
+
+  // Hide splash
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.classList.add('hide');
+      setTimeout(() => splash.remove(), 500);
+    }
+  }, 2000);
+}
+
+// ═══ CHAT-FIRST HELPERS ═══
+function applyNoEditorMode() {
+  if (state.activePath) return; // já tem arquivo aberto — não entrar em no-editor
+  const shell = document.getElementById('shell');
+  shell.classList.add('no-editor');
+  // sidebar oculta por padrão — sem sidebar-collapsed; usamos sidebar.hidden + ausência de sidebar-open
+  shell.classList.remove('sidebar-open');
+  document.getElementById('sidebar').classList.add('hidden');
+  state.sidebarVisible = false;
+}
+
+function exitNoEditorMode() {
+  const shell = document.getElementById('shell');
+  shell.classList.remove('no-editor');
+  shell.classList.remove('sidebar-open');
+  // Restaurar estado da sidebar
+  shell.classList.toggle('sidebar-collapsed', !state.sidebarVisible);
+  document.getElementById('sidebar').classList.toggle('hidden', !state.sidebarVisible);
+}
+
+function bindUI() {
+  document.getElementById('workspaceInput').addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      await loadWorkspace(event.target.value.trim());
+    }
+  });
+  document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
+  document.getElementById('quickOpenBtn').addEventListener('click', openQuickOpen);
+  document.getElementById('saveBtn').addEventListener('click', saveActiveFile);
+  document.getElementById('sidebarRefreshBtn').addEventListener('click', refreshWorkspace);
+  document.getElementById('openWorkspaceBtn').addEventListener('click', async () => {
+    const nextRoot = prompt('Workspace', state.workspaceRoot || '');
+    if (nextRoot) await loadWorkspace(nextRoot.trim());
+  });
+  document.getElementById('newFileBtn').addEventListener('click', createNewFile);
+  document.getElementById('searchInput').addEventListener('input', debounce((event) => runSearch(event.target.value.trim()), 150));
+  document.getElementById('gitRefreshBtn').addEventListener('click', refreshGit);
+  document.getElementById('gitStageAllBtn').addEventListener('click', () => stageFiles([]));
+  document.getElementById('gitCommitBtn').addEventListener('click', promptCommit);
+  document.getElementById('showDiffBtn').addEventListener('click', showActiveDiff);
+  document.getElementById('saveFileBtn').addEventListener('click', saveActiveFile);
+  document.getElementById('terminalToggleBtn').addEventListener('click', () => toggleTerminal());
+  document.getElementById('terminalCloseBtn').addEventListener('click', () => toggleTerminal(false));
+  document.getElementById('terminalClearBtn').addEventListener('click', clearTerminal);
+  document.getElementById('terminalClaudeBtn').addEventListener('click', () => sendToTerminal('claude\n'));
+  document.getElementById('chatInput').addEventListener('input', onChatInput);
+  document.getElementById('chatInput').addEventListener('keydown', onChatKeyDown);
+  document.getElementById('sendBtn').addEventListener('click', sendChat);
+  document.getElementById('newSessionBtn').addEventListener('click', resetChatSession);
+  document.getElementById('captureBtn').addEventListener('click', handleCaptureShortcut);
+  if (document.getElementById('skillsBtn')) document.getElementById('skillsBtn').addEventListener('click', openSkillsModal);
+  document.getElementById('skillsClose').addEventListener('click', closeSkillsModal);
+  document.getElementById('skillsOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeSkillsModal(); });
+  document.getElementById('skillsBack').addEventListener('click', showSkillsList);
+  document.getElementById('skillsInput').addEventListener('input', () => {
+    document.getElementById('skillsRunBtn').disabled = !document.getElementById('skillsInput').value.trim();
+  });
+  document.getElementById('skillsRunBtn').addEventListener('click', executeSkill);
+  document.getElementById('modelBtn').addEventListener('click', cycleModel);
+  document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('attachInput').click());
+  document.getElementById('attachInput').addEventListener('change', handleAttachImage);
+  document.getElementById('attachRemove').addEventListener('click', clearAttachment);
+  const _darkBtn = document.getElementById('darkModeBtn');
+  if (_darkBtn) _darkBtn.addEventListener('click', toggleDarkMode);
+  const _histBtn = document.getElementById('sessionHistoryBtn');
+  if (_histBtn) _histBtn.addEventListener('click', openSessionDrawer);
+  const _drawerClose = document.getElementById('sessionDrawerClose');
+  if (_drawerClose) _drawerClose.addEventListener('click', closeSessionDrawer);
+  const _overlay = document.getElementById('sessionOverlay');
+  if (_overlay) _overlay.addEventListener('click', closeSessionDrawer);
+  const _micBtn = document.getElementById('micBtn');
+  if (_micBtn) _micBtn.addEventListener('click', toggleVoiceInput);
+  const _banner = document.getElementById('completionBanner');
+  if (_banner) _banner.addEventListener('click', () => _banner.classList.remove('show'));
+  document.querySelectorAll('.activity-btn[data-panel]').forEach((button) => {
+    button.addEventListener('click', () => setPanel(button.dataset.panel));
+  });
+
+  document.getElementById('quickOpenOverlay').addEventListener('click', (event) => {
+    if (event.target.id === 'quickOpenOverlay') closeQuickOpen();
+  });
+  document.getElementById('commandOverlay').addEventListener('click', (event) => {
+    if (event.target.id === 'commandOverlay') closeCommandPalette();
+  });
+
+  document.getElementById('quickOpenInput').addEventListener('input', (event) => {
+    state.quickOpenIndex = 0;
+    renderQuickOpen(event.target.value.trim());
+  });
+  document.getElementById('quickOpenInput').addEventListener('keydown', handleQuickOpenKeys);
+  document.getElementById('commandInput').addEventListener('input', (event) => {
+    state.commandIndex = 0;
+    renderCommandPalette(event.target.value.trim());
+  });
+  document.getElementById('commandInput').addEventListener('keydown', handleCommandKeys);
+
+  const editor = document.getElementById('codeEditor');
+  editor.addEventListener('input', onEditorInput);
+  editor.addEventListener('click', updateSelectionInfo);
+  editor.addEventListener('keyup', updateSelectionInfo);
+  editor.addEventListener('select', updateSelectionInfo);
+
+  document.addEventListener('keydown', handleGlobalShortcuts);
+}
+
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    state.claudeVersion = data.claude?.version || '';
+    state.claudePath = data.claude?.path || '';
+    state.chatMode = data.chatMode || 'claude-code';
+    state.activeAccount = data.activeAccount || 1;
+    state.workspaceRoot = localStorage.getItem('cloudcode_workspace') || '/Users/prod.caiq/Desktop/DIGITAI SOMA' || data.defaultWorkspace || '';
+    document.getElementById('bottomStatus').textContent = data.hasKey ? 'pronto' : 'sem chave';
+    // bottomMeta will be synced by updateAccountUI() after loadAccountState()
+  } catch (error) {
+    toast('Falha ao carregar status do app.');
+  }
+}
+
+async function bootWorkspace() {
+  if (!state.workspaceRoot) return;
+  await loadWorkspace(state.workspaceRoot);
+}
+
+async function loadWorkspace(root) {
+  if (!root) return;
+
+  try {
+    const treeRes = await fetch(`/api/workspace/tree?root=${encodeURIComponent(root)}`);
+    if (!treeRes.ok) throw new Error('Workspace inválido');
+    const treeData = await treeRes.json();
+
+    const filesRes = await fetch(`/api/workspace/files?root=${encodeURIComponent(root)}`);
+    const filesData = filesRes.ok ? await filesRes.json() : { files: [] };
+
+    state.workspaceRoot = treeData.root;
+    state.tree = treeData.tree || [];
+    state.workspaceFiles = filesData.files || [];
+    localStorage.setItem('cloudcode_workspace', state.workspaceRoot);
+    document.getElementById('workspaceInput').value = state.workspaceRoot;
+    document.getElementById('workspaceHelper').textContent = state.workspaceRoot;
+    document.getElementById('bottomWorkspace').textContent = shortenPath(state.workspaceRoot);
+
+    renderTree();
+    renderQuickOpen('');
+    await refreshGit();
+    updateEditorMeta();
+    toast('Workspace carregado.');
+  } catch (error) {
+    toast(error.message || 'Falha ao abrir workspace.');
+  }
+}
+
+async function refreshWorkspace() {
+  if (!state.workspaceRoot) return;
+  await loadWorkspace(state.workspaceRoot);
+}
+
+function setPanel(panel) {
+  state.panel = panel;
+  document.getElementById('sidebarTitle').textContent = panel === 'explorer' ? 'Explorer' : panel === 'search' ? 'Busca' : 'Git';
+  document.getElementById('panelExplorer').classList.toggle('hidden', panel !== 'explorer');
+  document.getElementById('panelSearch').classList.toggle('hidden', panel !== 'search');
+  document.getElementById('panelGit').classList.toggle('hidden', panel !== 'git');
+  document.querySelectorAll('.activity-btn[data-panel]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.panel === panel);
+  });
+  if (panel === 'search') {
+    document.getElementById('searchInput').focus();
+  }
+}
+
+function toggleSidebar() {
+  state.sidebarVisible = !state.sidebarVisible;
+  const shell = document.getElementById('shell');
+  const noEditor = shell.classList.contains('no-editor');
+
+  if (noEditor) {
+    // Em no-editor mode: usar sidebar-open em vez de sidebar-collapsed
+    shell.classList.toggle('sidebar-open', state.sidebarVisible);
+  } else {
+    // Modo normal com editor
+    shell.classList.toggle('sidebar-collapsed', !state.sidebarVisible);
+  }
+
+  document.getElementById('sidebar').classList.toggle('hidden', !state.sidebarVisible);
+
+  // Mostrar workspaceInput na titlebar quando sidebar abrir
+  const wInput = document.getElementById('workspaceInput');
+  if (wInput) {
+    wInput.style.display = state.sidebarVisible ? '' : 'none';
+    if (state.sidebarVisible && state.workspaceRoot) wInput.value = state.workspaceRoot;
+  }
+}
+
+function renderTree() {
+  const wrap = document.getElementById('treeWrap');
+  wrap.innerHTML = '';
+
+  if (!state.tree.length) {
+    wrap.innerHTML = '<div class="helper">Nenhum arquivo visível.</div>';
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  function walk(nodes, depth) {
+    nodes.forEach((node) => {
+      const row = document.createElement('div');
+      row.className = `tree-node${state.activePath === node.path ? ' active' : ''}`;
+      row.dataset.path = node.path;
+      row.dataset.dir = String(node.type === 'directory');
+      row.innerHTML = `
+        <span class="tree-indent" style="width:${depth * 14}px"></span>
+        <span>${node.type === 'directory' ? '▸' : '·'}</span>
+        <span class="tree-name ${node.type === 'directory' ? 'tree-folder' : ''}">${escapeHtml(node.name)}</span>
+      `;
+
+      if (node.type === 'file') {
+        row.addEventListener('click', () => openFile(node.path));
+      }
+
+      fragment.appendChild(row);
+
+      if (node.type === 'directory' && Array.isArray(node.children) && node.children.length) {
+        walk(node.children, depth + 1);
+      }
+    });
+  }
+
+  walk(state.tree, 0);
+  wrap.appendChild(fragment);
+}
+
+async function openFile(filePath, lineNumber = 0) {
+  if (!filePath) return;
+
+  if (state.fileState.has(filePath)) {
+    activateFile(filePath);
+    if (lineNumber) focusLine(lineNumber);
+    return;
+  }
+
+  const res = await fetch(`/api/file?path=${encodeURIComponent(filePath)}`);
+  const data = await res.json();
+  if (!res.ok) {
+    toast(data.error || 'Falha ao abrir arquivo.');
+    return;
+  }
+
+  state.fileState.set(filePath, {
+    path: filePath,
+    content: data.content,
+    savedContent: data.content,
+    dirty: false,
+  });
+
+  if (!state.openFiles.includes(filePath)) {
+    state.openFiles.push(filePath);
+  }
+
+  activateFile(filePath);
+  if (lineNumber) focusLine(lineNumber);
+  // ETAPA 3: ao abrir um arquivo, revelar editor
+  exitNoEditorMode();
+}
+
+function activateFile(filePath) {
+  state.activeDiffPath = null;
+  state.activePath = filePath;
+  const file = state.fileState.get(filePath);
+  if (!file) return;
+
+  document.getElementById('editorEmpty').classList.add('hidden');
+  document.getElementById('diffView').classList.add('hidden');
+
+  const editor = document.getElementById('codeEditor');
+  editor.classList.remove('hidden');
+  editor.value = file.content;
+
+  renderTabs();
+  renderTree();
+  updateEditorMeta();
+  updateSelectionInfo();
+}
+
+function closeFile(filePath) {
+  state.openFiles = state.openFiles.filter((path) => path !== filePath);
+  if (state.activePath === filePath) {
+    state.activePath = state.openFiles[state.openFiles.length - 1] || null;
+  }
+  renderTabs();
+
+  if (state.activePath && state.fileState.has(state.activePath)) {
+    activateFile(state.activePath);
+  } else {
+    state.activePath = null;
+    showEditorEmpty();
+  }
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('editorTabs');
+  tabs.innerHTML = '';
+
+  state.openFiles.forEach((filePath) => {
+    const file = state.fileState.get(filePath);
+    const tab = document.createElement('button');
+    tab.className = `tab${state.activePath === filePath && !state.activeDiffPath ? ' active' : ''}`;
+    tab.innerHTML = `
+      <span>${escapeHtml(baseName(filePath))}</span>
+      ${file?.dirty ? '<span class="tab-dirty"></span>' : ''}
+      <span class="tab-close">✕</span>
+    `;
+    tab.addEventListener('click', (event) => {
+      if (event.target.classList.contains('tab-close')) {
+        event.stopPropagation();
+        closeFile(filePath);
+        return;
+      }
+      activateFile(filePath);
+    });
+    tabs.appendChild(tab);
+  });
+
+  if (state.activeDiffPath) {
+    const diffTab = document.createElement('button');
+    diffTab.className = 'tab active';
+    diffTab.innerHTML = `<span>diff</span><span class="tab-close">✕</span>`;
+    diffTab.addEventListener('click', (event) => {
+      if (event.target.classList.contains('tab-close')) {
+        hideDiff();
+      }
+    });
+    tabs.appendChild(diffTab);
+  }
+}
+
+function showEditorEmpty() {
+  document.getElementById('editorEmpty').classList.remove('hidden');
+  document.getElementById('codeEditor').classList.add('hidden');
+  document.getElementById('diffView').classList.add('hidden');
+  updateEditorMeta();
+}
+
+function updateEditorMeta() {
+  const caption = document.getElementById('editorCaption');
+  const bottomFile = document.getElementById('bottomFile');
+
+  if (state.activeDiffPath) {
+    caption.textContent = `Diff · ${shortenPath(state.activeDiffPath)}`;
+    bottomFile.textContent = 'visualizando diff';
+    return;
+  }
+
+  if (!state.activePath) {
+    caption.textContent = 'Nenhum arquivo aberto';
+    bottomFile.textContent = 'nenhum arquivo';
+    return;
+  }
+
+  caption.textContent = shortenPath(state.activePath);
+  bottomFile.textContent = baseName(state.activePath);
+}
+
+function onEditorInput(event) {
+  const file = state.fileState.get(state.activePath);
+  if (!file) return;
+  file.content = event.target.value;
+  file.dirty = file.content !== file.savedContent;
+  renderTabs();
+  updateSelectionInfo();
+}
+
+function updateSelectionInfo() {
+  const editor = document.getElementById('codeEditor');
+  const selection = editor.value.slice(editor.selectionStart, editor.selectionEnd);
+  const lines = editor.value.slice(0, editor.selectionStart).split('\n');
+  const line = lines.length;
+  const column = (lines.at(-1) || '').length + 1;
+  document.getElementById('selectionCaption').textContent = selection ? `${selection.length} selecionados · L${line}:C${column}` : `L${line}:C${column}`;
+}
+
+async function saveActiveFile() {
+  if (!state.activePath) return;
+  const file = state.fileState.get(state.activePath);
+  if (!file) return;
+
+  const res = await fetch('/api/file', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: state.activePath, content: file.content }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    toast(data.error || 'Falha ao salvar.');
+    return;
+  }
+
+  file.savedContent = file.content;
+  file.dirty = false;
+  renderTabs();
+  toast('Arquivo salvo.');
+  await refreshGit();
+}
+
+async function createNewFile() {
+  if (!state.workspaceRoot) return;
+  const relativePath = prompt('Novo arquivo', '');
+  if (!relativePath) return;
+  const absolutePath = joinPath(state.workspaceRoot, relativePath.trim());
+  const res = await fetch('/api/file', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: absolutePath, content: '' }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    toast(data.error || 'Não foi possível criar o arquivo.');
+    return;
+  }
+  await refreshWorkspace();
+  await openFile(absolutePath);
+}
+
+async function runSearch(query) {
+  const wrap = document.getElementById('searchResults');
+  if (!state.workspaceRoot || !query) {
+    wrap.innerHTML = '<div class="helper">Digite algo para buscar.</div>';
+    return;
+  }
+
+  wrap.innerHTML = '<div class="helper">Buscando...</div>';
+  const res = await fetch(`/api/search?root=${encodeURIComponent(state.workspaceRoot)}&q=${encodeURIComponent(query)}`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    wrap.innerHTML = `<div class="helper">${escapeHtml(data.error || 'Erro na busca.')}</div>`;
+    return;
+  }
+
+  if (!data.results.length) {
+    wrap.innerHTML = '<div class="helper">Nada encontrado.</div>';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  data.results.forEach((result) => {
+    const row = document.createElement('div');
+    row.className = 'search-result';
+    row.innerHTML = `
+      <div class="result-path">${escapeHtml(baseName(result.path))}</div>
+      <div class="result-line">${escapeHtml(shortenPath(result.path))} · linha ${result.line}</div>
+      <div class="result-preview">${escapeHtml(result.preview)}</div>
+    `;
+    row.addEventListener('click', async () => {
+      await openFile(result.path, result.line);
+    });
+    wrap.appendChild(row);
+  });
+}
+
+async function refreshGit() {
+  if (!state.workspaceRoot) return;
+  const res = await fetch(`/api/git/status?root=${encodeURIComponent(state.workspaceRoot)}`);
+  const data = await res.json();
+  state.gitStatus = data;
+  renderGit();
+}
+
+function renderGit() {
+  const wrap = document.getElementById('gitResults');
+  const branchInfo = document.getElementById('gitBranchInfo');
+
+  if (!state.gitStatus) {
+    branchInfo.textContent = 'Sem git';
+    wrap.innerHTML = '<div class="helper">Nenhum repositório detectado.</div>';
+    return;
+  }
+
+  branchInfo.textContent = state.gitStatus.branch || 'sem git';
+  wrap.innerHTML = '';
+
+  if (!state.gitStatus.files?.length) {
+    wrap.innerHTML = '<div class="helper">Árvore limpa.</div>';
+    return;
+  }
+
+  state.gitStatus.files.forEach((file) => {
+    const row = document.createElement('div');
+    row.className = 'git-item';
+    row.innerHTML = `
+      <div class="git-path">${escapeHtml(file.path)}</div>
+      <div class="git-meta">index ${escapeHtml(file.indexStatus || ' ')} · worktree ${escapeHtml(file.worktreeStatus || ' ')}</div>
+      <div class="git-actions">
+        <button class="micro-btn" data-action="open">Abrir</button>
+        <button class="micro-btn" data-action="diff">Diff</button>
+        <button class="micro-btn primary" data-action="stage">Stage</button>
+      </div>
+    `;
+    row.addEventListener('click', async (event) => {
+      const action = event.target.dataset.action;
+      if (action === 'open') {
+        await openFile(joinPath(state.workspaceRoot, file.path));
+        return;
+      }
+      if (action === 'diff') {
+        await showDiffFor(joinPath(state.workspaceRoot, file.path));
+        return;
+      }
+      if (action === 'stage') {
+        await stageFiles([file.path]);
+      }
+    });
+    wrap.appendChild(row);
+  });
+}
+
+async function stageFiles(paths) {
+  if (!state.workspaceRoot) return;
+  const res = await fetch('/api/git/stage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ root: state.workspaceRoot, paths }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    toast(data.error || 'Erro ao stagear arquivos.');
+    return;
+  }
+  toast(paths.length ? 'Arquivo staged.' : 'Tudo staged.');
+  await refreshGit();
+}
+
+async function promptCommit() {
+  if (!state.workspaceRoot) return;
+  const message = prompt('Mensagem do commit', '');
+  if (!message) return;
+  const res = await fetch('/api/git/commit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ root: state.workspaceRoot, message }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    toast(data.error || 'Erro ao commitar.');
+    return;
+  }
+  toast('Commit criado.');
+  await refreshGit();
+}
+
+async function showActiveDiff() {
+  if (!state.activePath) return;
+  await showDiffFor(state.activePath);
+}
+
+async function showDiffFor(filePath) {
+  if (!state.workspaceRoot) return;
+  const relativePath = toRelative(filePath, state.workspaceRoot);
+  const res = await fetch(`/api/git/diff?root=${encodeURIComponent(state.workspaceRoot)}&path=${encodeURIComponent(relativePath)}`);
+  const data = await res.json();
+  if (!res.ok) {
+    toast(data.error || 'Erro ao carregar diff.');
+    return;
+  }
+
+  state.activeDiffPath = filePath;
+  const diffView = document.getElementById('diffView');
+  document.getElementById('editorEmpty').classList.add('hidden');
+  document.getElementById('codeEditor').classList.add('hidden');
+  diffView.classList.remove('hidden');
+
+  diffView.innerHTML = formatDiffHtml(data.diff || 'Sem diff.');
+  renderTabs();
+  updateEditorMeta();
+}
+
+function hideDiff() {
+  state.activeDiffPath = null;
+  if (state.activePath) {
+    activateFile(state.activePath);
+  } else {
+    showEditorEmpty();
+  }
+}
+
+function focusLine(lineNumber) {
+  const editor = document.getElementById('codeEditor');
+  const lines = editor.value.split('\n');
+  let offset = 0;
+  for (let index = 0; index < Math.max(0, lineNumber - 1); index += 1) {
+    offset += (lines[index]?.length || 0) + 1;
+  }
+  editor.focus();
+  editor.setSelectionRange(offset, offset);
+  const lineHeight = 21;
+  editor.scrollTop = Math.max(0, (lineNumber - 3) * lineHeight);
+  updateSelectionInfo();
+}
+
+function getSelectionContext() {
+  const editor = document.getElementById('codeEditor');
+  if (editor.classList.contains('hidden')) return '';
+  return editor.value.slice(editor.selectionStart, editor.selectionEnd).trim();
+}
+
+function resetChatSession() {
+  state.chatSessionId = null;
+  state.chatMessages = [];
+  document.getElementById('assistantSession').textContent = 'nova sessão';
+  const wrap = document.getElementById('chatScroll');
+  wrap.innerHTML = `
+    <div class="assistant-empty" id="assistantEmpty">
+      <strong>Nova sessão pronta</strong>
+      <div>O próximo prompt abrirá uma sessão nova do Claude Code.</div>
+    </div>
+  `;
+}
+
+function cycleModel() {
+  const order = ['sonnet', 'opus', 'haiku'];
+  const nextIndex = (order.indexOf(state.model) + 1) % order.length;
+  state.model = order[nextIndex];
+  updateModelUI();
+}
+
+function updateModelUI() {
+  const label = state.model === 'opus' ? 'Opus' : state.model === 'haiku' ? 'Haiku' : 'Sonnet';
+  document.getElementById('modelBtn').textContent = label;
+  document.getElementById('assistantModel').textContent = label;
+}
+
+function onChatInput(event) {
+  const input = event.target;
+  input.style.height = isMobile ? '44px' : '72px';
+  input.style.height = `${Math.min(input.scrollHeight, isMobile ? 140 : 220)}px`;
+  document.getElementById('sendBtn').disabled = (!input.value.trim() && !state.attachedImage) || state.chatBusy;
+}
+
+function onChatKeyDown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendChat();
+  }
+}
+
+async function handleAttachImage(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    toast('Enviando imagem...');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro no upload');
+    state.attachedImage = { path: data.path, name: file.name, objectUrl: URL.createObjectURL(file) };
+    document.getElementById('attachThumb').src = state.attachedImage.objectUrl;
+    document.getElementById('attachName').textContent = file.name;
+    document.getElementById('attachPreview').classList.add('active');
+    document.getElementById('sendBtn').disabled = false;
+    toast('Imagem anexada!');
+  } catch (err) {
+    toast(err.message || 'Erro ao anexar imagem');
+  }
+  e.target.value = '';
+}
+
+function clearAttachment() {
+  if (state.attachedImage?.objectUrl) URL.revokeObjectURL(state.attachedImage.objectUrl);
+  state.attachedImage = null;
+  document.getElementById('attachPreview').classList.remove('active');
+  document.getElementById('attachThumb').src = '';
+  document.getElementById('attachName').textContent = '';
+  const input = document.getElementById('chatInput');
+  document.getElementById('sendBtn').disabled = !input.value.trim() && !state.attachedImage;
+}
+
+async function sendChat() {
+  if (state.chatBusy) return;
+  const input = document.getElementById('chatInput');
+  const prompt = input.value.trim();
+  const hasImage = !!state.attachedImage;
+  if (!prompt && !hasImage) return;
+
+  const screenshotPath = state.attachedImage?.path || '';
+  const imageName = state.attachedImage?.name || '';
+  const displayText = hasImage && prompt
+    ? `[imagem: ${imageName}]\n${prompt}`
+    : hasImage
+    ? `[imagem: ${imageName}]`
+    : prompt;
+  const finalPrompt = prompt || 'Analise esta imagem. Descreva o que aparece e identifique qualquer informacao relevante.';
+
+  input.value = '';
+  input.style.height = isMobile ? '44px' : '72px';
+  document.getElementById('sendBtn').disabled = true;
+  clearAttachment();
+
+  await requestReply({
+    displayText,
+    prompt: finalPrompt,
+    screenshotPath,
+  });
+}
+
+async function requestReply({ displayText, prompt, screenshotPath = '', isSkill = false, skillId = '' }) {
+  state.chatBusy = true;
+  appendChatMessage('user', displayText);
+  const assistant = appendChatMessage('assistant', '');
+  let fullText = '';
+
+  // ECO MODE: route model if enabled
+  let effectiveModel = state.model;
+  if (window.EcoMode && window.EcoMode.isEnabled()) {
+    effectiveModel = window.EcoMode.getRecommendedModel(prompt);
+  }
+
+  // PIXEL AGENTS: set active state
+  updatePixelAgentFromChat(true, 'Chat');
+
+  try {
+    let url = '/chat';
+    let body;
+
+    if (isSkill && skillId) {
+      url = '/api/skills/run';
+      body = {
+        skillId,
+        input: prompt,
+        clientId: state.clientId || undefined,
+        model: effectiveModel,
+        workspaceRoot: state.workspaceRoot,
+      };
+    } else {
+      body = {
+        prompt,
+        sessionId: state.chatSessionId,
+        model: effectiveModel,
+        workspaceRoot: state.workspaceRoot,
+        currentFile: state.activePath,
+        selection: getSelectionContext(),
+        screenshotPath,
+      };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok || !res.body) {
+      const data = await res.json().catch(() => ({ error: 'Erro ao falar com o Claude.' }));
+      throw new Error(data.error || 'Erro ao falar com o Claude.');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6);
+        if (payload === '[DONE]') continue;
+        const event = JSON.parse(payload);
+
+        if (event.error) throw new Error(event.error);
+        if (event.type === 'session' && event.sessionId) {
+          state.chatSessionId = event.sessionId;
+          document.getElementById('assistantSession').textContent = `${event.sessionId.slice(0, 8)}…`;
+          continue;
+        }
+        if (event.type === 'text' && event.text) {
+          fullText += event.text;
+          assistant.innerHTML = marked.parse(fullText) + '<span class="streaming-cursor"></span>';
+          scrollChat();
+          continue;
+        }
+      }
+    }
+
+    assistant.innerHTML = marked.parse(fullText || 'Sem resposta.');
+    // Update last message text for session history
+    if (state.chatMessages.length > 0) {
+      state.chatMessages[state.chatMessages.length - 1].text = fullText || 'Sem resposta.';
+    }
+    scrollChat();
+  } catch (error) {
+    assistant.innerHTML = `<span style="color:var(--red)">${escapeHtml(error.message || 'Erro')}</span>`;
+  } finally {
+    state.chatBusy = false;
+    document.getElementById('sendBtn').disabled = !document.getElementById('chatInput').value.trim();
+    notifyCompletion(fullText);
+    saveCurrentSession();
+    focusChat();
+
+    // PIXEL AGENTS: set done/idle
+    updatePixelAgentFromChat(false);
+
+    // ECO MODE: estimate tokens (~4 chars per token rough estimate)
+    if (window.EcoMode && fullText) {
+      const estimatedTokens = Math.ceil((prompt.length + fullText.length) / 4);
+      window.EcoMode.trackTokens(estimatedTokens, effectiveModel);
+    }
+  }
+}
+
+function appendChatMessage(role, markdownText) {
+  const empty = document.getElementById('assistantEmpty');
+  if (empty) empty.remove();
+
+  if (markdownText) {
+    state.chatMessages.push({ role, text: markdownText });
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = `chat-group ${role === 'user' ? 'user-group' : 'ai-group'}`;
+  wrap.innerHTML = `
+    <div class="chat-role">${role === 'user' ? 'Voce' : 'Claude Code'}</div>
+    <div class="chat-bubble ${role === 'user' ? 'user' : ''}">
+      <div class="chat-md"></div>
+    </div>
+  `;
+
+  const body = wrap.querySelector('.chat-md');
+  body.innerHTML = role === 'user' ? escapeHtml(markdownText) : (markdownText ? marked.parse(markdownText) : '<span class="streaming-cursor"></span>');
+
+  document.getElementById('chatScroll').appendChild(wrap);
+  scrollChat();
+  return body;
+}
+
+async function handleCaptureShortcut() {
+  if (state.chatBusy) {
+    toast('Aguarde a resposta atual terminar.');
+    return;
+  }
+
+  try {
+    toast('Capturando tela inteira...');
+    const res = await fetch('/capture-screen', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Falha ao capturar a tela.');
+
+    await requestReply({
+      displayText: '[captura de tela enviada automaticamente]',
+      prompt: 'Analise esta captura de tela. Descreva o que aparece, identifique problemas visuais ou de fluxo e recomende a melhor próxima ação.',
+      screenshotPath: data.path,
+    });
+  } catch (error) {
+    toast(error.message || 'Erro ao capturar tela.');
+  }
+}
+
+// ═══ DARK MODE ═══
+function loadThemePreference() {
+  const saved = localStorage.getItem('cloudcode_theme');
+  if (saved === 'dark') applyDarkMode(true);
+}
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  applyDarkMode(!isDark);
+}
+
+function applyDarkMode(dark) {
+  state.darkMode = dark;
+  document.documentElement.dataset.theme = dark ? 'dark' : '';
+  localStorage.setItem('cloudcode_theme', dark ? 'dark' : 'light');
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0D0D11' : '#FFFFFF';
+  const hljsLink = document.getElementById('hljsTheme');
+  hljsLink.href = dark
+    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
+    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+  const btn = document.getElementById('darkModeBtn');
+  btn.innerHTML = dark
+    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+}
+
+// ═══ SESSION HISTORY ═══
+function loadSessionHistory() {
+  try {
+    state.sessionHistory = JSON.parse(localStorage.getItem('cloudcode_sessions') || '[]');
+  } catch { state.sessionHistory = []; }
+}
+
+function saveCurrentSession() {
+  if (!state.chatSessionId || state.chatMessages.length === 0) return;
+  const existing = state.sessionHistory.findIndex(s => s.id === state.chatSessionId);
+  const entry = {
+    id: state.chatSessionId,
+    title: state.chatMessages[0]?.text?.slice(0, 60) || 'Sem titulo',
+    model: state.model,
+    timestamp: Date.now(),
+    messages: state.chatMessages.slice(-100),
+  };
+  if (existing >= 0) {
+    state.sessionHistory[existing] = entry;
+  } else {
+    state.sessionHistory.unshift(entry);
+  }
+  if (state.sessionHistory.length > 50) state.sessionHistory = state.sessionHistory.slice(0, 50);
+  localStorage.setItem('cloudcode_sessions', JSON.stringify(state.sessionHistory));
+}
+
+function openSessionDrawer() {
+  renderSessionList();
+  document.getElementById('sessionOverlay').classList.add('open');
+  document.getElementById('sessionDrawer').classList.add('open');
+}
+
+function closeSessionDrawer() {
+  document.getElementById('sessionOverlay').classList.remove('open');
+  document.getElementById('sessionDrawer').classList.remove('open');
+}
+
+function renderSessionList() {
+  const list = document.getElementById('sessionList');
+  if (!state.sessionHistory.length) {
+    list.innerHTML = '<div class="session-empty">Nenhuma sessao salva ainda.<br>Suas conversas aparecem aqui.</div>';
+    return;
+  }
+  list.innerHTML = state.sessionHistory.map((s, i) => {
+    const ago = timeAgo(s.timestamp);
+    const modelLabel = s.model === 'opus' ? 'Opus' : s.model === 'haiku' ? 'Haiku' : 'Sonnet';
+    return `<div class="session-item" data-idx="${i}">
+      <div class="session-item-content" onclick="loadSession(${i})">
+        <div class="session-item-title">${escapeHtml(s.title)}</div>
+        <div class="session-item-meta">${modelLabel} · ${ago}</div>
+      </div>
+      <div class="session-item-delete" onclick="deleteSession(${i})" title="Apagar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadSession(idx) {
+  const session = state.sessionHistory[idx];
+  if (!session) return;
+  state.chatSessionId = session.id;
+  state.chatMessages = [...session.messages];
+  state.model = session.model || 'sonnet';
+  updateModelUI();
+  document.getElementById('assistantSession').textContent = session.id.slice(0, 8) + '...';
+  const wrap = document.getElementById('chatScroll');
+  wrap.innerHTML = '';
+  session.messages.forEach(m => appendChatMessage(m.role, m.text));
+  closeSessionDrawer();
+  scrollChat();
+}
+
+function deleteSession(idx) {
+  state.sessionHistory.splice(idx, 1);
+  localStorage.setItem('cloudcode_sessions', JSON.stringify(state.sessionHistory));
+  renderSessionList();
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'agora';
+  if (mins < 60) return mins + ' min';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd';
+  return Math.floor(days / 30) + ' mes';
+}
+
+// ═══ VOICE INPUT ═══
+// ═══ VOICE INPUT — Whisper + fallback SpeechRecognition ═══
+let recognition = null;
+let voiceBaseText = '';
+
+// MediaRecorder state (para Whisper)
+let mediaRecorder = null;
+let audioChunks = [];
+let micStream = null;
+
+function setupSpeechRecognition() {
+  // Sempre inicializar browser SR como fallback
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let final = '';
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          final += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      const input = document.getElementById('chatInput');
+      input.value = voiceBaseText + final + interim;
+      onChatInput({ target: input });
+    };
+
+    recognition.onend = () => {
+      state.isRecording = false;
+      setMicState('idle');
+    };
+
+    recognition.onerror = (event) => {
+      state.isRecording = false;
+      setMicState('idle');
+      if (event.error === 'not-allowed') {
+        toast('Permissao de microfone negada');
+      } else if (event.error !== 'aborted') {
+        toast('Erro no reconhecimento de voz');
+      }
+    };
+  }
+}
+
+function setMicState(s) {
+  // s: 'idle' | 'recording' | 'processing'
+  const btn = document.getElementById('micBtn');
+  if (!btn) return;
+  btn.classList.remove('recording', 'processing');
+  if (s === 'recording') btn.classList.add('recording');
+  if (s === 'processing') btn.classList.add('processing');
+}
+
+async function toggleVoiceInput() {
+  if (state.isRecording) {
+    // Parar gravação em andamento
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop(); // vai disparar onstop → upload
+    } else if (recognition) {
+      recognition.stop();
+    }
+    state.isRecording = false;
+    setMicState('idle');
+    return;
+  }
+
+  // Tentar MediaRecorder → Whisper primeiro
+  if (navigator.mediaDevices && window.MediaRecorder) {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+
+      // Escolher formato suportado
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/ogg')
+        ? 'audio/ogg'
+        : '';
+
+      mediaRecorder = new MediaRecorder(micStream, mimeType ? { mimeType } : {});
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Liberar microfone
+        if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
+
+        if (audioChunks.length === 0) { setMicState('idle'); return; }
+
+        const blob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
+        audioChunks = [];
+
+        // Se blob muito pequeno (<1KB) provavelmente só ruído
+        if (blob.size < 1000) { setMicState('idle'); return; }
+
+        setMicState('processing');
+
+        try {
+          const formData = new FormData();
+          formData.append('audio', blob, 'recording.webm');
+
+          const resp = await fetch('/api/transcribe', { method: 'POST', body: formData });
+          const data = await resp.json();
+
+          setMicState('idle');
+
+          if (!resp.ok || data.error) {
+            // Sem OPENAI_API_KEY → fallback silencioso para SR
+            if (data.error && data.error.includes('OPENAI_API_KEY')) {
+              // Tentar browser SR como fallback
+              _startBrowserSR();
+            } else {
+              toast(data.error || 'Erro na transcrição');
+            }
+            return;
+          }
+
+          if (data.text) {
+            const input = document.getElementById('chatInput');
+            const base = input.value ? input.value + ' ' : '';
+            input.value = base + data.text;
+            onChatInput({ target: input });
+            input.focus();
+          }
+        } catch (err) {
+          setMicState('idle');
+          toast('Erro ao transcrever — usando voz do browser');
+          _startBrowserSR();
+        }
+      };
+
+      state.isRecording = true;
+      setMicState('recording');
+      mediaRecorder.start(250); // coleta chunks a cada 250ms
+      return;
+    } catch (err) {
+      // Permissão negada ou MediaRecorder indisponível → fallback
+      if (err.name === 'NotAllowedError') {
+        toast('Permissao de microfone negada');
+        return;
+      }
+      // Outro erro → tenta SpeechRecognition
+    }
+  }
+
+  // Fallback: browser SpeechRecognition
+  _startBrowserSR();
+}
+
+function _startBrowserSR() {
+  if (!recognition) {
+    toast('Reconhecimento de voz não disponível neste browser');
+    return;
+  }
+  voiceBaseText = document.getElementById('chatInput').value;
+  state.isRecording = true;
+  setMicState('recording');
+  try { recognition.start(); } catch {}
+}
+
+// ═══ NOTIFICATIONS ═══
+let appInBackground = false;
+let audioCtx = null;
+
+function setupVisibilityTracking() {
+  document.addEventListener('visibilitychange', () => {
+    appInBackground = document.hidden;
+    if (!document.hidden) {
+      document.getElementById('completionBanner').classList.remove('show');
+    }
+  });
+}
+
+function setupAudioUnlock() {
+  const unlock = () => {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const buf = audioCtx.createBuffer(1, 1, 22050);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
+      src.start(0);
+    }
+    document.removeEventListener('touchstart', unlock);
+    document.removeEventListener('click', unlock);
+  };
+  document.addEventListener('touchstart', unlock, { once: true });
+  document.addEventListener('click', unlock, { once: true });
+}
+
+function playNotificationSound() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.3);
+  } catch {}
+}
+
+function showCompletionBanner() {
+  const banner = document.getElementById('completionBanner');
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 4000);
+}
+
+function notifyCompletion(text) {
+  playNotificationSound();
+  if (appInBackground) showCompletionBanner();
+  if (text) speakText(text);
+}
+
+// ═══ TTS — Text to Speech ═══
+let ttsEnabled = localStorage.getItem('cloudcode_tts') === 'true';
+let ttsAudio = null;
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  localStorage.setItem('cloudcode_tts', ttsEnabled);
+  const btn = document.getElementById('ttsToggleBtn');
+  if (btn) {
+    btn.title = ttsEnabled ? 'Voz ON — clique para desligar' : 'Voz OFF — clique para ligar';
+    btn.style.opacity = ttsEnabled ? '1' : '0.45';
+  }
+  toast(ttsEnabled ? '🔊 Voz ativada' : '🔇 Voz desativada');
+}
+
+async function speakText(text) {
+  if (!ttsEnabled || !text) return;
+  // Limpar áudio anterior
+  if (ttsAudio) { try { ttsAudio.pause(); } catch {} ttsAudio = null; }
+  // Limpar markdown simples antes de falar
+  const clean = text.replace(/```[\s\S]*?```/g, 'bloco de código').replace(/`[^`]+`/g, '').replace(/[#*_~>]/g, '').trim().slice(0, 600);
+  if (!clean) return;
+  try {
+    const resp = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean, voice: 'nova' }),
+    });
+    if (!resp.ok) return; // sem chave ou erro — falha silenciosa
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    ttsAudio = new Audio(url);
+    ttsAudio.onended = () => URL.revokeObjectURL(url);
+    ttsAudio.play().catch(() => {});
+  } catch {}
+}
+
+// ═══ COMMAND APPROVAL UI ═══
+let pendingCmdPolling = null;
+
+function startCmdPolling() {
+  if (pendingCmdPolling) return;
+  pendingCmdPolling = setInterval(async () => {
+    try {
+      const r = await fetch('/api/commands/pending');
+      const data = await r.json();
+      if (data.total > 0) renderPendingCmds(data.pending);
+      else clearPendingCmdsUI();
+    } catch {}
+  }, 2000);
+}
+
+function renderPendingCmds(cmds) {
+  let banner = document.getElementById('cmdApprovalBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'cmdApprovalBanner';
+    banner.style.cssText = `
+      position:fixed;bottom:140px;left:50%;transform:translateX(-50%);
+      background:var(--surface2);border:1px solid var(--border2);
+      border-radius:16px;padding:14px 16px;z-index:9999;
+      min-width:300px;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.3);
+      font-size:13px;
+    `;
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = `
+    <div style="font-weight:700;color:var(--text);margin-bottom:10px">⚠️ Comandos aguardando aprovação (${cmds.length})</div>
+    ${cmds.map(c => `
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+        <code style="font-size:12px;color:var(--accent);display:block;margin-bottom:8px;word-break:break-all">${c.command}</code>
+        <div style="display:flex;gap:8px">
+          <button onclick="approveCmd('${c.id}')" style="
+            flex:1;height:32px;border-radius:8px;border:none;cursor:pointer;
+            background:var(--accent);color:#fff;font-weight:600;font-size:12px
+          ">✓ Aprovar</button>
+          <button onclick="rejectCmd('${c.id}')" style="
+            flex:1;height:32px;border-radius:8px;border:none;cursor:pointer;
+            background:var(--red);color:#fff;font-weight:600;font-size:12px
+          ">✗ Rejeitar</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function clearPendingCmdsUI() {
+  const banner = document.getElementById('cmdApprovalBanner');
+  if (banner) banner.remove();
+}
+
+async function approveCmd(id) {
+  try {
+    const r = await fetch('/api/commands/approve', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await r.json();
+    if (data.ok) toast('✓ Comando executado');
+    else toast(data.error || 'Erro ao executar');
+  } catch { toast('Erro de conexão'); }
+}
+
+async function rejectCmd(id) {
+  try {
+    await fetch('/api/commands/reject', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    toast('✗ Comando rejeitado');
+  } catch {}
+}
+
+function scrollChat() {
+  const wrap = document.getElementById('chatScroll');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function focusChat() {
+  const input = document.getElementById('chatInput');
+  input.focus();
+}
+
+function focusEditor() {
+  if (state.activePath && !state.activeDiffPath) {
+    document.getElementById('codeEditor').focus();
+  }
+}
+
+function setupTerminal() {
+  if (!window.Terminal || !window.FitAddon || !window.WebLinksAddon) {
+    document.getElementById('terminalDrawer').innerHTML = `
+      <div class="terminal-header">
+        <div class="terminal-caption">Terminal indisponível</div>
+        <div class="terminal-stage"></div>
+      </div>
+      <div class="terminal-wrap" style="color:#C7CAD7;display:flex;align-items:center">xterm.js não carregou.</div>
+    `;
+    return;
+  }
+
+  term = new Terminal({
+    fontFamily: '"SF Mono","JetBrains Mono","Fira Code",monospace',
+    fontSize: 13,
+    lineHeight: 1.45,
+    cursorBlink: true,
+    cursorStyle: 'bar',
+    scrollback: 10000,
+    theme: {
+      background: '#171726',
+      foreground: '#ECECF7',
+      cursor: '#7C5CFC',
+      selection: 'rgba(124,92,252,.24)',
+      black: '#25253A',
+      red: '#EF4444',
+      green: '#22C55E',
+      yellow: '#F59E0B',
+      blue: '#60A5FA',
+      magenta: '#C084FC',
+      cyan: '#22D3EE',
+      white: '#F9FAFB',
+      brightBlack: '#53557A',
+      brightRed: '#F87171',
+      brightGreen: '#4ADE80',
+      brightYellow: '#FBBF24',
+      brightBlue: '#93C5FD',
+      brightMagenta: '#D8B4FE',
+      brightCyan: '#67E8F9',
+      brightWhite: '#FFFFFF',
+    },
+  });
+
+  fitAddon = new FitAddon.FitAddon();
+  term.loadAddon(fitAddon);
+  term.loadAddon(new WebLinksAddon.WebLinksAddon());
+  term.open(document.getElementById('terminal'));
+
+  termSocket = new WebSocket(`ws://${location.host}`);
+  termSocket.addEventListener('open', () => {
+    fitAddon.fit();
+    if (state.workspaceRoot) sendToTerminal(`cd ${shellEscape(state.workspaceRoot)}\n`);
+  });
+  termSocket.addEventListener('message', (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      if (payload.type === 'output') term.write(payload.data);
+    } catch {}
+  });
+  term.onData((data) => {
+    if (termSocket.readyState === 1) {
+      termSocket.send(JSON.stringify({ type: 'input', data }));
+    }
+  });
+  term.onResize(({ cols, rows }) => {
+    if (termSocket.readyState === 1) {
+      termSocket.send(JSON.stringify({ type: 'resize', cols, rows }));
+    }
+  });
+  new ResizeObserver(() => {
+    if (!state.terminalOpen) return;
+    fitAddon.fit();
+  }).observe(document.getElementById('terminalDrawer'));
+}
+
+function toggleTerminal(force) {
+  state.terminalOpen = typeof force === 'boolean' ? force : !state.terminalOpen;
+  document.getElementById('terminalDrawer').classList.toggle('open', state.terminalOpen);
+  document.getElementById('terminalToggleBtn').classList.toggle('active', state.terminalOpen);
+  if (state.terminalOpen && term && fitAddon) {
+    requestAnimationFrame(() => {
+      fitAddon.fit();
+      term.focus();
+      if (state.workspaceRoot) sendToTerminal(`cd ${shellEscape(state.workspaceRoot)}\n`);
+    });
+  }
+}
+
+function clearTerminal() {
+  term.clear();
+}
+
+function sendToTerminal(data) {
+  if (termSocket?.readyState === 1) {
+    termSocket.send(JSON.stringify({ type: 'input', data }));
+  }
+}
+
+function openQuickOpen() {
+  if (!state.workspaceFiles.length) return;
+  document.getElementById('quickOpenOverlay').classList.add('open');
+  document.getElementById('quickOpenInput').value = '';
+  state.quickOpenIndex = 0;
+  renderQuickOpen('');
+  setTimeout(() => document.getElementById('quickOpenInput').focus(), 10);
+}
+
+function closeQuickOpen() {
+  document.getElementById('quickOpenOverlay').classList.remove('open');
+}
+
+function renderQuickOpen(query) {
+  const list = document.getElementById('quickOpenList');
+  const filtered = state.workspaceFiles
+    .filter((filePath) => toRelative(filePath, state.workspaceRoot).toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 120);
+
+  list.innerHTML = '';
+
+  filtered.forEach((filePath, index) => {
+    const item = document.createElement('div');
+    item.className = `palette-item${index === state.quickOpenIndex ? ' sel' : ''}`;
+    item.innerHTML = `
+      <div class="palette-main">
+        <div class="palette-title">${escapeHtml(baseName(filePath))}</div>
+        <div class="palette-sub">${escapeHtml(toRelative(filePath, state.workspaceRoot))}</div>
+      </div>
+      <div class="palette-hint">arquivo</div>
+    `;
+    item.addEventListener('click', async () => {
+      await openFile(filePath);
+      closeQuickOpen();
+    });
+    list.appendChild(item);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="palette-item"><div class="palette-main"><div class="palette-title">Nada encontrado</div></div></div>';
+  }
+}
+
+function handleQuickOpenKeys(event) {
+  const filtered = state.workspaceFiles
+    .filter((filePath) => toRelative(filePath, state.workspaceRoot).toLowerCase().includes(event.target.value.trim().toLowerCase()))
+    .slice(0, 120);
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    state.quickOpenIndex = filtered.length ? Math.min(filtered.length - 1, state.quickOpenIndex + 1) : 0;
+    renderQuickOpen(event.target.value.trim());
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    state.quickOpenIndex = Math.max(0, state.quickOpenIndex - 1);
+    renderQuickOpen(event.target.value.trim());
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    const selected = filtered[state.quickOpenIndex];
+    if (selected) {
+      openFile(selected);
+      closeQuickOpen();
+    }
+  } else if (event.key === 'Escape') {
+    closeQuickOpen();
+  }
+}
+
+function openCommandPalette() {
+  document.getElementById('commandOverlay').classList.add('open');
+  document.getElementById('commandInput').value = '';
+  state.commandIndex = 0;
+  renderCommandPalette('');
+  setTimeout(() => document.getElementById('commandInput').focus(), 10);
+}
+
+function closeCommandPalette() {
+  document.getElementById('commandOverlay').classList.remove('open');
+}
+
+function renderCommandPalette(query) {
+  const list = document.getElementById('commandList');
+  const filtered = commands.filter((command) => command.title.toLowerCase().includes(query.toLowerCase()));
+  list.innerHTML = '';
+
+  filtered.forEach((command, index) => {
+    const item = document.createElement('div');
+    item.className = `palette-item${index === state.commandIndex ? ' sel' : ''}`;
+    item.innerHTML = `
+      <div class="palette-main">
+        <div class="palette-title">${escapeHtml(command.title)}</div>
+        <div class="palette-sub">${escapeHtml(command.id)}</div>
+      </div>
+      <div class="palette-hint">${escapeHtml(command.hint)}</div>
+    `;
+    item.addEventListener('click', () => {
+      command.action();
+      closeCommandPalette();
+    });
+    list.appendChild(item);
+  });
+}
+
+function handleCommandKeys(event) {
+  const filtered = commands.filter((command) => command.title.toLowerCase().includes(event.target.value.trim().toLowerCase()));
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    state.commandIndex = filtered.length ? Math.min(filtered.length - 1, state.commandIndex + 1) : 0;
+    renderCommandPalette(event.target.value.trim());
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    state.commandIndex = Math.max(0, state.commandIndex - 1);
+    renderCommandPalette(event.target.value.trim());
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    const command = filtered[state.commandIndex];
+    if (command) {
+      command.action();
+      closeCommandPalette();
+    }
+  } else if (event.key === 'Escape') {
+    closeCommandPalette();
+  }
+}
+
+function handleGlobalShortcuts(event) {
+  if (event.metaKey && event.key.toLowerCase() === 'p' && !event.shiftKey) {
+    event.preventDefault();
+    openQuickOpen();
+    return;
+  }
+  if (event.metaKey && event.shiftKey && event.key.toLowerCase() === 'p') {
+    event.preventDefault();
+    openCommandPalette();
+    return;
+  }
+  if (event.metaKey && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    saveActiveFile();
+    return;
+  }
+  if (event.metaKey && event.key.toLowerCase() === 'j') {
+    event.preventDefault();
+    toggleTerminal();
+    return;
+  }
+  if (event.metaKey && event.key.toLowerCase() === 'b') {
+    event.preventDefault();
+    toggleSidebar();
+    return;
+  }
+  if (event.metaKey && event.key.toLowerCase() === 'l') {
+    event.preventDefault();
+    focusChat();
+    return;
+  }
+  if (event.metaKey && event.shiftKey && event.code === 'Digit1') {
+    event.preventDefault();
+    handleCaptureShortcut();
+    return;
+  }
+  if (event.key === 'Escape') {
+    closeQuickOpen();
+    closeCommandPalette();
+  }
+}
+
+function updateStatus(connected, label) {
+  document.getElementById('statusText').textContent = label;
+  document.getElementById('statusDot').style.background = connected ? 'var(--green)' : 'var(--red)';
+}
+
+// ═══ CLIENTS ═══
+state.clientId = localStorage.getItem('cloudcode_clientId') || '';
+
+async function loadClients() {
+  try {
+    const res = await fetch('/api/clients');
+    const clients = await res.json();
+    const select = document.getElementById('clientSelect');
+    const current = state.clientId;
+    select.innerHTML = '<option value="">Sem cliente</option>' +
+      clients.map(c => `<option value="${c.id}"${c.id === current ? ' selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+    updateClientAvatar();
+  } catch {}
+}
+
+function updateClientAvatar() {
+  const select = document.getElementById('clientSelect');
+  const avatar = document.getElementById('clientAvatar');
+  const opt = select.options[select.selectedIndex];
+  if (select.value && opt) {
+    const name = opt.textContent.trim();
+    avatar.textContent = name.slice(0, 2).toUpperCase();
+    avatar.style.display = 'flex';
+  } else {
+    avatar.style.display = 'none';
+  }
+}
+
+document.getElementById('clientSelect').addEventListener('change', (e) => {
+  state.clientId = e.target.value;
+  localStorage.setItem('cloudcode_clientId', state.clientId);
+  updateClientAvatar();
+});
+
+document.getElementById('clientAddBtn').addEventListener('click', () => {
+  document.getElementById('clientOverlay').classList.add('open');
+  document.getElementById('clientName').value = '';
+  document.getElementById('clientNiche').value = '';
+  document.getElementById('clientTone').value = '';
+  document.getElementById('clientDesc').value = '';
+  document.getElementById('clientMood').value = '';
+  document.getElementById('clientLighting').value = '';
+  document.getElementById('clientColor').value = '';
+  document.getElementById('clientReference').value = '';
+  document.getElementById('clientName').focus();
+});
+
+document.getElementById('clientCancelBtn').addEventListener('click', () => {
+  document.getElementById('clientOverlay').classList.remove('open');
+});
+
+document.getElementById('clientOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) document.getElementById('clientOverlay').classList.remove('open');
+});
+
+document.getElementById('clientSaveBtn').addEventListener('click', async () => {
+  const name = document.getElementById('clientName').value.trim();
+  if (!name) { toast('Nome e obrigatorio.'); return; }
+  try {
+    const res = await fetch('/api/clients/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        niche: document.getElementById('clientNiche').value.trim(),
+        tone: document.getElementById('clientTone').value.trim(),
+        description: document.getElementById('clientDesc').value.trim(),
+        visualMood: document.getElementById('clientMood').value.trim(),
+        visualLighting: document.getElementById('clientLighting').value.trim(),
+        visualColor: document.getElementById('clientColor').value.trim(),
+        visualReference: document.getElementById('clientReference').value.trim(),
+      }),
+    });
+    const client = await res.json();
+    if (client.error) { toast(client.error); return; }
+    state.clientId = client.id;
+    localStorage.setItem('cloudcode_clientId', client.id);
+    document.getElementById('clientOverlay').classList.remove('open');
+    await loadClients();
+    toast('Cliente criado.');
+  } catch (err) {
+    toast('Erro ao criar cliente.');
+  }
+});
+
+// ═══ SKILLS ═══
+let _skillsData = [];
+let _selectedSkill = null;
+
+async function openSkillsModal() {
+  const overlay = document.getElementById('skillsOverlay');
+  overlay.classList.add('open');
+  try {
+    const res = await fetch('/api/skills');
+    _skillsData = await res.json();
+    renderSkillsList();
+  } catch {
+    toast('Erro ao carregar skills.');
+    closeSkillsModal();
+  }
+}
+
+function closeSkillsModal() {
+  document.getElementById('skillsOverlay').classList.remove('open');
+  _selectedSkill = null;
+  document.getElementById('skillsInput').value = '';
+  document.getElementById('skillsRunBtn').disabled = true;
+  showSkillsList();
+}
+
+function renderSkillsList() {
+  const list = document.getElementById('skillsList');
+  const icons = {
+    soma_post_engine: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>',
+    soma_reels_system: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+    soma_content_machine: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 4 12.7V17H8v-2.3A7 7 0 0 1 12 2z"/></svg>',
+    soma_growth_analysis: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+    soma_offer_builder: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  };
+
+  list.innerHTML = _skillsData.map(s => `
+    <div class="skills-item" data-id="${s.id}">
+      <div class="skills-item-icon">${icons[s.id] || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'}</div>
+      <div class="skills-item-text">
+        <div class="skills-item-name">${escapeHtml(s.name)}</div>
+        <div class="skills-item-desc">${escapeHtml(s.description)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.skills-item').forEach(el => {
+    el.addEventListener('click', () => selectSkill(el.dataset.id));
+  });
+}
+
+function selectSkill(id) {
+  _selectedSkill = _skillsData.find(s => s.id === id);
+  if (!_selectedSkill) return;
+  document.getElementById('skillsList').style.display = 'none';
+  document.getElementById('skillsInputWrap').classList.add('active');
+  document.getElementById('skillsSelectedName').textContent = _selectedSkill.name;
+  document.getElementById('skillsTitle').textContent = 'Skills';
+  document.getElementById('skillsInput').value = '';
+  document.getElementById('skillsRunBtn').disabled = true;
+  document.getElementById('skillsInput').focus();
+}
+
+function showSkillsList() {
+  document.getElementById('skillsList').style.display = '';
+  document.getElementById('skillsInputWrap').classList.remove('active');
+  document.getElementById('skillsTitle').textContent = 'Skills';
+  _selectedSkill = null;
+}
+
+async function executeSkill() {
+  const input = document.getElementById('skillsInput').value.trim();
+  if (!_selectedSkill || !input) return;
+
+  const skillName = _selectedSkill.name;
+  const skillId = _selectedSkill.id;
+  closeSkillsModal();
+
+  if (state.chatBusy) {
+    toast('Aguarde a resposta atual terminar.');
+    return;
+  }
+
+  await requestReply({
+    displayText: `[Skill: ${skillName}]\n${input}`,
+    prompt: input,
+    isSkill: true,
+    skillId,
+  });
+}
+
+function toast(message) {
+  const overlay = document.getElementById('toastOverlay');
+  document.getElementById('toastText').textContent = message;
+  overlay.style.display = 'flex';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    overlay.style.display = 'none';
+  }, 2200);
+}
+
+function debounce(fn, wait) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
+function shortenPath(targetPath) {
+  if (!targetPath) return '';
+  return targetPath.length > 56 ? `…${targetPath.slice(-56)}` : targetPath;
+}
+
+function baseName(targetPath) {
+  return targetPath.split('/').filter(Boolean).pop() || targetPath;
+}
+
+function joinPath(root, relativePath) {
+  return `${root.replace(/\/+$/, '')}/${relativePath.replace(/^\/+/, '')}`;
+}
+
+function toRelative(targetPath, rootPath) {
+  if (!targetPath || !rootPath) return targetPath || '';
+  return targetPath.startsWith(rootPath) ? targetPath.slice(rootPath.length + 1) : targetPath;
+}
+
+function shellEscape(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDiffHtml(diffText) {
+  return escapeHtml(diffText).split('\n').map((line) => {
+    if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="add">${line}</span>`;
+    if (line.startsWith('-') && !line.startsWith('---')) return `<span class="remove">${line}</span>`;
+    if (line.startsWith('@@') || line.startsWith('diff ') || line.startsWith('index ') || line.startsWith('---') || line.startsWith('+++')) {
+      return `<span class="meta">${line}</span>`;
+    }
+    return line;
+  }).join('\n');
+}
+
+updateModelUI();
+
+// ══════════════════════════════════════════════════
+// ═══ SOMACRANIO — Vault de notas (Obsidian) ═══
+// ══════════════════════════════════════════════════
+const soma = {
+  vaultRoot: localStorage.getItem('soma_vault') || '',
+  tree: [],
+  activeFile: null,
+  searchQuery: '',
+};
+
+// ════════════════════════════════════════
+// MAC AGENT UI
+// ════════════════════════════════════════
+function initMacAgent() {
+  const btn = document.getElementById('macExecBtn');
+  if (btn) btn.addEventListener('click', openMacExec);
+  document.getElementById('macExecClose')?.addEventListener('click', closeMacExec);
+  document.getElementById('macExecOverlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'macExecOverlay') closeMacExec();
+  });
+  document.getElementById('macExecRun')?.addEventListener('click', runMacCommand);
+  document.getElementById('macExecInput')?.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runMacCommand();
+  });
+  document.getElementById('macExecPresets')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const list = document.getElementById('macExecPresetList');
+    if (list) list.style.display = list.style.display === 'none' ? '' : 'none';
+  });
+  document.querySelectorAll('.mac-preset').forEach(el => {
+    el.addEventListener('click', () => {
+      const input = document.getElementById('macExecInput');
+      if (input) input.value = el.dataset.cmd;
+      const list = document.getElementById('macExecPresetList');
+      if (list) list.style.display = 'none';
+    });
+  });
+}
+
+async function openMacExec() {
+  const overlay = document.getElementById('macExecOverlay');
+  overlay.classList.add('open');
+  // Verificar status do agent
+  try {
+    const res = await fetch('/api/mac/status');
+    const data = await res.json();
+    const dot = document.getElementById('macStatusDot');
+    const label = document.getElementById('macStatusLabel');
+    if (data.connected) {
+      dot.style.background = 'var(--green)';
+      label.textContent = `Conectado · ${data.agent?.hostname || data.agent?.agentId || 'Mac Agent'}`;
+    } else {
+      dot.style.background = 'var(--red)';
+      label.textContent = 'Desconectado';
+    }
+  } catch {
+    document.getElementById('macStatusLabel').textContent = 'Erro ao verificar';
+  }
+}
+
+function closeMacExec() {
+  document.getElementById('macExecOverlay')?.classList.remove('open');
+}
+
+async function runMacCommand() {
+  const input = document.getElementById('macExecInput');
+  const resultEl = document.getElementById('macExecResult');
+  const runBtn = document.getElementById('macExecRun');
+  const command = input?.value.trim();
+  if (!command || !resultEl) return;
+
+  runBtn.disabled = true;
+  runBtn.textContent = '⏳ Executando...';
+  resultEl.style.display = 'block';
+  resultEl.style.color = 'var(--text-dim)';
+  resultEl.textContent = 'Aguardando resposta do Mac Agent...';
+
+  try {
+    const res = await fetch('/api/mac/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      resultEl.style.color = 'var(--green)';
+      resultEl.textContent = data.stdout || '(sem output)';
+      if (data.stderr) resultEl.textContent += `\n[stderr] ${data.stderr}`;
+    } else {
+      resultEl.style.color = 'var(--red)';
+      resultEl.textContent = data.error || 'Erro desconhecido';
+    }
+  } catch (e) {
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = e.message;
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = '▶ Executar';
+  }
+}
+
+// ════════════════════════════════════════
+// ACCOUNT SWITCHER
+// ════════════════════════════════════════
+function initAccountSwitcher() {
+  const btn = document.getElementById('accountBtn');
+  const dropdown = document.getElementById('accountDropdown');
+  if (!btn || !dropdown) return;
+
+  // Toggle dropdown
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('accountSwitcher')?.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  // Account items
+  dropdown.querySelectorAll('.account-item').forEach(item => {
+    item.addEventListener('click', () => switchAccount(item.dataset.account));
+  });
+}
+
+async function loadAccountState() {
+  try {
+    const res = await fetch('/api/account');
+    if (!res.ok) return;
+    const data = await res.json();
+    state.activeAccount = data.activeAccount || 1;
+    updateAccountUI();
+  } catch (e) {}
+}
+
+function updateAccountUI() {
+  const acc = state.activeAccount || 1;
+  const btn = document.getElementById('accountBtn');
+  const label = document.getElementById('accountBtnLabel');
+  if (btn) {
+    btn.className = `account-btn acc-${acc}`;
+  }
+  if (label) label.textContent = `Conta ${acc}`;
+
+  // Update dropdown active state
+  document.querySelectorAll('.account-item').forEach(item => {
+    const itemAcc = parseInt(item.dataset.account, 10);
+    item.classList.toggle('active', itemAcc === acc);
+  });
+
+  // Sync bottom bar
+  const meta = document.getElementById('bottomMeta');
+  if (meta) meta.textContent = `Claude API · conta ${acc}`;
+}
+
+async function switchAccount(accountId) {
+  const dropdown = document.getElementById('accountDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+
+  // accountId é o valor do data-account: "1" ou "2" (inteiro como string)
+  const num = parseInt(accountId, 10);
+  if (num !== 1 && num !== 2) { toast('Conta inválida'); return; }
+
+  try {
+    const res = await fetch('/api/account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account: num }),   // envia inteiro: 1 ou 2
+    });
+    const data = await res.json();
+    if (data.ok) {
+      state.activeAccount = num;
+      updateAccountUI();
+      toast(`Conta ${num} ativa`);
+    } else {
+      toast(data.error || 'Erro ao trocar conta');
+    }
+  } catch (e) {
+    toast('Erro ao trocar conta');
+  }
+}
+
+function initSomacranio() {
+  const btn = document.getElementById('somacranioBtn');
+  if (btn) btn.addEventListener('click', openSomacranio);
+
+  document.getElementById('somacranioClose').addEventListener('click', closeSomacranio);
+  document.getElementById('somacranioOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSomacranio();
+  });
+  document.getElementById('somacranioSearch').addEventListener('input', (e) => {
+    soma.searchQuery = e.target.value.toLowerCase().trim();
+    renderSomaTree();
+  });
+  document.getElementById('somacranioChangeVault').addEventListener('click', async () => {
+    // Vault é fixo no servidor (SOMACRANIO_PATH) — botão agora força recarregamento
+    soma.tree = [];
+    await loadSomaVault();
+    toast('Vault recarregado');
+  });
+  document.getElementById('somacranioSendToChat').addEventListener('click', () => {
+    if (!soma.activeFile) return;
+    const viewerTitle = document.getElementById('somacranioViewerTitle').textContent;
+    const md = document.getElementById('somacranioMd').innerText;
+    const excerpt = md.slice(0, 600).trim();
+    const chatInput = document.getElementById('chatInput');
+    chatInput.value = `[Nota: ${viewerTitle}]\n\n${excerpt}${md.length > 600 ? '...' : ''}`;
+    chatInput.dispatchEvent(new Event('input'));
+    closeSomacranio();
+    setTimeout(() => chatInput.focus(), 50);
+  });
+}
+
+async function openSomacranio() {
+  document.getElementById('somacranioOverlay').classList.add('open');
+  // Vault é gerenciado pelo servidor (SOMACRANIO_PATH) — não depende mais do workspace local
+  if (!soma.tree.length) {
+    await loadSomaVault();
+  }
+}
+
+function closeSomacranio() {
+  document.getElementById('somacranioOverlay').classList.remove('open');
+}
+
+async function loadSomaVault() {
+  const treeEl = document.getElementById('somacranioTree');
+  treeEl.innerHTML = '<div class="somacranio-loading">Carregando notas...</div>';
+
+  try {
+    // Endpoint dedicado — vault fixo no servidor (SOMACRANIO_PATH)
+    const res = await fetch('/api/somacranio/tree');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Vault não encontrado');
+    }
+    const data = await res.json();
+    // Servidor já retorna apenas .md — não precisa de filterMdTree
+    soma.tree = data.tree || [];
+    soma.vaultRoot = data.root || '';
+    const vaultLabel = document.getElementById('somacranioVaultPath');
+    if (vaultLabel) vaultLabel.textContent = soma.vaultRoot;
+    renderSomaTree();
+  } catch (e) {
+    treeEl.innerHTML = `<div class="somacranio-loading" style="color:var(--red)">⚠ ${e.message}</div>`;
+  }
+}
+
+function filterMdTree(nodes) {
+  const result = [];
+  for (const node of nodes) {
+    if (node.type === 'file') {
+      if (node.name.endsWith('.md')) result.push(node);
+    } else if (node.type === 'directory') {
+      const children = filterMdTree(node.children || []);
+      if (children.length) result.push({ ...node, children });
+    }
+  }
+  return result;
+}
+
+function renderSomaTree() {
+  const treeEl = document.getElementById('somacranioTree');
+  treeEl.innerHTML = '';
+
+  const q = soma.searchQuery;
+
+  function matchNode(node) {
+    if (!q) return true;
+    if (node.name.toLowerCase().includes(q)) return true;
+    if (node.children) return node.children.some(matchNode);
+    return false;
+  }
+
+  function buildNode(node, depth = 0) {
+    if (!matchNode(node)) return null;
+
+    const wrap = document.createElement('div');
+    const el = document.createElement('div');
+    el.className = `soma-node ${node.type === 'directory' ? 'is-folder' : ''} ${soma.activeFile === node.path ? 'active' : ''}`;
+    el.style.paddingLeft = `${depth * 12 + 8}px`;
+    el.dataset.path = node.path;
+
+    const icon = node.type === 'directory'
+      ? `<svg class="soma-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+      : `<svg class="soma-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+
+    el.innerHTML = `${icon}<span class="tree-name">${node.name.replace(/\.md$/, '')}</span>`;
+
+    if (node.type === 'file') {
+      el.addEventListener('click', () => openSomaNote(node));
+    } else {
+      let expanded = depth < 2;
+      const childWrap = document.createElement('div');
+      childWrap.className = 'soma-children';
+      (node.children || []).forEach(child => {
+        const childEl = buildNode(child, depth + 1);
+        if (childEl) childWrap.appendChild(childEl);
+      });
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        expanded = !expanded;
+        childWrap.style.display = expanded ? '' : 'none';
+      });
+      childWrap.style.display = expanded ? '' : 'none';
+      wrap.appendChild(el);
+      wrap.appendChild(childWrap);
+      return wrap;
+    }
+
+    wrap.appendChild(el);
+    return wrap;
+  }
+
+  if (!soma.tree.length) {
+    treeEl.innerHTML = '<div class="somacranio-loading">Nenhuma nota .md encontrada.</div>';
+    return;
+  }
+
+  soma.tree.forEach(node => {
+    const el = buildNode(node, 0);
+    if (el) treeEl.appendChild(el);
+  });
+}
+
+async function openSomaNote(node) {
+  soma.activeFile = node.path;
+  renderSomaTree(); // atualiza active state
+
+  const empty = document.getElementById('somacranioEmpty');
+  const viewer = document.getElementById('somacranioViewer');
+  const title = document.getElementById('somacranioViewerTitle');
+  const mdEl = document.getElementById('somacranioMd');
+
+  if (empty) empty.style.display = 'none';
+  if (viewer) {
+    viewer.classList.remove('hidden');
+    viewer.style.display = 'flex';
+  }
+  title.textContent = node.name.replace(/\.md$/, '');
+  mdEl.innerHTML = '<div style="color:var(--text-dim);padding:8px">Carregando...</div>';
+
+  try {
+    // Endpoint dedicado — garante acesso só ao vault
+    const res = await fetch(`/api/somacranio/file?path=${encodeURIComponent(node.path)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao abrir nota.');
+    // Renderizar markdown
+    mdEl.innerHTML = marked.parse(data.content || '');
+    // Highlight de código
+    mdEl.querySelectorAll('pre code').forEach(block => {
+      try { hljs.highlightElement(block); } catch {}
+    });
+    // Scroll pro topo
+    mdEl.parentElement.scrollTop = 0;
+  } catch (e) {
+    mdEl.innerHTML = `<div style="color:var(--red)">${e.message}</div>`;
+  }
+}
+</script>
+<script src="/pixel-agents.js"></script>
+<script src="/eco-mode.js"></script>
+</body>
+</html>

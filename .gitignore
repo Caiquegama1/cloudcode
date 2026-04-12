@@ -1,0 +1,11 @@
+node_modules/
+.env
+data/clients.json
+/tmp/
+*.log
+.DS_Store
+uploads/
+dist/
+build/
+.next/
+coverage/

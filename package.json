@@ -1,0 +1,56 @@
+{
+  "name": "cloudcode",
+  "version": "1.0.0",
+  "description": "CLOUDCODE — AI Terminal Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "node server.js",
+    "server": "node server.js",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "dist": "electron-builder --mac --publish never",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "node-pty": "^1.0.0",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "electron": "^41.1.1",
+    "electron-builder": "^26.8.1",
+    "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "com.digitaisoma.cloudcode",
+    "productName": "CLOUDCODE",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg"
+      ],
+      "icon": "assets/icon.icns",
+      "darkModeSupport": true
+    },
+    "files": [
+      "main.js",
+      "CLOUDCODE.js",
+      "server.js",
+      "claude-wrapper.sh",
+      "public/**/*",
+      "assets/**/*",
+      "data/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      ".env"
+    ],
+    "asar": true,
+    "npmRebuild": true,
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ]
+  }
+}

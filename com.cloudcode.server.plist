@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cloudcode.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/prod.caiq/.nvm/versions/node/v24.14.0/bin/node</string>
+        <string>/Users/prod.caiq/Desktop/vsoma-terminal/server.js</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/prod.caiq/Desktop/vsoma-terminal</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/cloudcode.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/cloudcode-error.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/prod.caiq/.nvm/versions/node/v24.14.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/prod.caiq</string>
+    </dict>
+</dict>
+</plist>

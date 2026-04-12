@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "python3", "gcc", "gnumake"]
+
+[phases.install]
+cmds = ["npm install --ignore-scripts", "npm rebuild node-pty --update-binary || true"]
+
+[start]
+cmd = "node server.js"

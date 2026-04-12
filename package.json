@@ -4,13 +4,14 @@
   "description": "CLOUDCODE — AI Terminal Desktop App",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node server.js",
     "dev": "node server.js",
     "server": "node server.js",
-    "build": "electron-builder",
     "build:mac": "electron-builder --mac",
-    "dist": "electron-builder --mac --publish never",
-    "postinstall": "electron-builder install-app-deps"
+    "dist": "electron-builder --mac --publish never"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "express": "^4.18.2",

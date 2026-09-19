@@ -1404,6 +1404,7 @@ function saveSession() {
   }
 
   localStorage.setItem('cloudcode_sessions', JSON.stringify(state.sessionHistory));
+  localStorage.setItem('cloudcode_lastSession', session.id);
 }
 
 function loadSessionHistory() {
@@ -1411,6 +1412,36 @@ function loadSessionHistory() {
     const saved = localStorage.getItem('cloudcode_sessions');
     if (saved) state.sessionHistory = JSON.parse(saved);
   } catch (e) { state.sessionHistory = []; }
+}
+
+// Marcador de "o usuario abriu um chat novo de proposito"
+const NEW_SESSION_MARKER = '__new__';
+
+// Abre a ultima conversa usada (em vez de um chat novo a cada abertura)
+function restoreLastSession() {
+  if (!state.sessionHistory.length) return;
+
+  let lastId = null;
+  try {
+    lastId = localStorage.getItem('cloudcode_lastSession');
+  } catch (e) { /* localStorage indisponivel */ }
+
+  // Usuario pediu um chat novo na ultima vez: respeita e abre vazio
+  if (lastId === NEW_SESSION_MARKER) return;
+
+  let last = lastId ? state.sessionHistory.find(s => s.id === lastId) : null;
+
+  // Sem marcador (ou apontando para sessao apagada): cai para a mais recente
+  if (!last) {
+    last = state.sessionHistory.reduce(
+      (a, b) => ((b.updatedAt || 0) > (a.updatedAt || 0) ? b : a),
+      state.sessionHistory[0]
+    );
+  }
+
+  if (!last || !last.messages || !last.messages.length) return;
+  applySession(last);
+  scrollToBottom();
 }
 
 function renderDrawer() {
@@ -1435,18 +1466,18 @@ function renderDrawer() {
   });
 }
 
-function loadSession(idx) {
-  const s = state.sessionHistory[idx];
-  if (!s) return;
+function applySession(s) {
   state.chatSessionId = s.id;
   state.model = s.model || 'sonnet';
-  state.chatMessages = [...s.messages];
+  state.chatMessages = [...(s.messages || [])];
+  state.chatBusy = false;
+  sendBtn.disabled = false;
   modelPill.textContent = state.model.toUpperCase();
 
   // Re-render messages
   messagesEl.innerHTML = '';
-  welcomeEl.style.display = 'none';
-  s.messages.forEach(m => {
+  welcomeEl.style.display = state.chatMessages.length ? 'none' : '';
+  state.chatMessages.forEach(m => {
     const time = m.time ? formatTime(new Date(m.time)) : '';
     renderMessage(m.role, m.content, time);
   });
@@ -1454,20 +1485,31 @@ function loadSession(idx) {
   // Highlight all code blocks
   messagesEl.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
 
+  localStorage.setItem('cloudcode_lastSession', s.id);
+}
+
+function loadSession(idx) {
+  const s = state.sessionHistory[idx];
+  if (!s) return;
+  applySession(s);
+
   closeDrawer();
   switchView('chat');
   scrollToBottom();
 }
 
 function deleteSession(idx) {
+  const removed = state.sessionHistory[idx];
   state.sessionHistory.splice(idx, 1);
   localStorage.setItem('cloudcode_sessions', JSON.stringify(state.sessionHistory));
+  if (removed && removed.id === state.chatSessionId) newSession();
   renderDrawer();
 }
 
 function clearAllSessions() {
   state.sessionHistory = [];
   localStorage.removeItem('cloudcode_sessions');
+  newSession();
   renderDrawer();
 }
 
@@ -1483,6 +1525,7 @@ function closeDrawer() {
 }
 
 function newSession() {
+  localStorage.setItem('cloudcode_lastSession', NEW_SESSION_MARKER);
   state.chatSessionId = null;
   state.chatMessages = [];
   state.chatBusy = false;
@@ -1756,6 +1799,7 @@ function escapeHtml(str) {
 async function init() {
   loadTheme();
   loadSessionHistory();
+  restoreLastSession();
   initSpeechRecognition();
 
   // Unlock audio on first touch

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.caique.briefing</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__HOME__/.agent-os/loops/briefing-diario.sh</string>
+  </array>
+  <!-- Seg a sex, 7h47 -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>47</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>47</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>47</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>47</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>47</integer></dict>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>BRAIN</key><string>__HOME__/Documents/BRAIN</string>
+  </dict>
+  <key>StandardOutPath</key><string>/tmp/caique-briefing.log</string>
+  <key>StandardErrorPath</key><string>/tmp/caique-briefing.err</string>
+</dict>
+</plist>
